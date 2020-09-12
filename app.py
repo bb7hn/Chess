@@ -191,9 +191,9 @@ def findBestMove(Board, board):
         return 0
     for move in legalMoves:
         Board.push_san(move)
-        score = minimax(Board, board, 0, False)
+        score = minimax(Board, board, 0, False, -9999999, 9999999)
         Board.pop()
-        print(score)
+        print(score, "     ", move)
         if score > bestScore:
             bestScore = score
             bestMove = move
@@ -201,9 +201,9 @@ def findBestMove(Board, board):
     Board.push_san(bestMove)
 
 
-def minimax(Board, board, depth, isMaximizing, maxdepth=2):
+def minimax(Board, board, depth, isMaximizing, alpha, beta):
     legalMoves = getLegalMoves(Board)
-    if Board.is_game_over() == True or depth >= maxdepth-1:
+    if Board.is_game_over() == True or depth >= 4:
         return getTotalScore(board, oppositeBoolean(isMaximizing))
 
     if isMaximizing == True:
@@ -211,22 +211,28 @@ def minimax(Board, board, depth, isMaximizing, maxdepth=2):
         for move in legalMoves:
             Board.push_san(move)
             board = boardToStr(Board)
-            score = minimax(Board, board, depth+1, False) * \
+            score = minimax(Board, board, depth+1, False, alpha, beta) * \
                 Evaluation(Board, board, isMaximizing)
             Board.pop()
             board = boardToStr(Board)
             bestScore = max(score, bestScore)
+            alpha = max(alpha, bestScore)
+            if beta <= alpha:
+                break
         return bestScore
     else:
         bestScore = 999999
         for move in legalMoves:
             Board.push_san(move)
             board = boardToStr(Board)
-            score = minimax(Board, board, depth+1, True) * \
+            score = minimax(Board, board, depth+1, True, alpha, beta) * \
                 Evaluation(Board, board, isMaximizing)
             Board.pop()
             board = boardToStr(Board)
             bestScore = min(score, bestScore)
+            beta = min(score, bestScore)
+            if beta <= alpha:
+                break
         return bestScore
 
 
