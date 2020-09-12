@@ -5,15 +5,11 @@ from PIL import ImageTk
 import time
 
 
-def getTotalScore(board, turn):
-    totalscore = 0
-    for i in range(8):
-        for j in range(8):
-            if turn == True and board[i][j].isupper() == True:
-                totalscore += getCurrentPointOfTable(i, j, board[i][j])
-            elif turn == False and board[i][j].islower() == True:
-                totalscore += getCurrentPointOfTable(i, j, board[i][j])
-    return totalscore
+def oppositeBoolean(boolean):
+    if(boolean):
+        return False
+    else:
+        return True
 
 
 def listToString(s):
@@ -43,6 +39,15 @@ def boardToStr(board):
         l.append(subl)
 
     return l
+
+
+def getLegalMoves(board):
+    if board.is_checkmate():
+        return "Check Mate!"
+    legalMoves = str(board.legal_moves.count)
+    legalMoves = legalMoves[legalMoves.index(
+        "(")+1:legalMoves.index(")")].replace(" ", "").split(",")
+    return legalMoves
 
 
 def getCurrentPointOfTable(x, y, stone):
@@ -128,23 +133,67 @@ def getCurrentPointOfTable(x, y, stone):
         return 0
 
 
-def getLegalMoves(board):
-    legalMoves = str(board.legal_moves.count)
-    legalMoves = legalMoves[legalMoves.index(
-        "(")+1:legalMoves.index(")")].replace(" ", "").split(",")
-    return legalMoves
+def getPiecePoint(piece):
+    if piece == "R":
+        return 5
+    elif piece == "N":
+        return 3
+    elif piece == "B":
+        return 3
+    elif piece == "Q":
+        return 10
+    elif piece == "P":
+        return 1
+    elif piece == "r":
+        return 5
+    elif piece == "n":
+        return 3
+    elif piece == "b":
+        return 3
+    elif piece == "q":
+        return 10
+    elif piece == "p":
+        return 1
+    else:
+        return 0
+
+
+def Evaluation(Board, board, color):  # true for white false for black
+    if Board.is_checkmate():
+        return 2000
+    score = 0
+    for i in range(8):
+        for j in range(8):
+            if color and board[i][j].isupper():
+                score += getPiecePoint(board[i][j])
+            elif oppositeBoolean(color) and board[i][j].islower():
+                score += getPiecePoint(board[i][j])
+    return score/1.61803398875
+
+
+def getTotalScore(board, turn):
+    totalscore = 0
+    for i in range(8):
+        for j in range(8):
+            if turn == True and board[i][j].isupper():
+                totalscore += getCurrentPointOfTable(i, j, board[i][j])
+            elif turn == False and board[i][j].islower():
+                totalscore += getCurrentPointOfTable(i, j, board[i][j])
+    return totalscore
 
 
 def findBestMove(Board, board):
     legalMoves = getLegalMoves(Board)
     bestScore = -999999
     bestMove = ""
-
+    if legalMoves == "Check Mate!":
+        print("Check Mate!")
+        return 0
     for move in legalMoves:
         Board.push_san(move)
         score = minimax(Board, board, 0, False)
         Board.pop()
-
+        print(score)
         if score > bestScore:
             bestScore = score
             bestMove = move
@@ -152,39 +201,64 @@ def findBestMove(Board, board):
     Board.push_san(bestMove)
 
 
-def minimax(Board, board, depth, isMaximizing):
+def minimax(Board, board, depth, isMaximizing, maxdepth=2):
     legalMoves = getLegalMoves(Board)
-    if Board.is_game_over() == True or depth >= 2:
-        return getTotalScore(board, isMaximizing)
+    if Board.is_game_over() == True or depth >= maxdepth-1:
+        return getTotalScore(board, oppositeBoolean(isMaximizing))
 
     if isMaximizing == True:
         bestScore = -9999999
         for move in legalMoves:
             Board.push_san(move)
-            score = minimax(Board, board, depth+1, False)
+            board = boardToStr(Board)
+            score = minimax(Board, board, depth+1, False) * \
+                Evaluation(Board, board, isMaximizing)
             Board.pop()
+            board = boardToStr(Board)
             bestScore = max(score, bestScore)
         return bestScore
     else:
         bestScore = 999999
         for move in legalMoves:
             Board.push_san(move)
-            score = minimax(Board, board, depth+1, True)
+            board = boardToStr(Board)
+            score = minimax(Board, board, depth+1, True) * \
+                Evaluation(Board, board, isMaximizing)
             Board.pop()
+            board = boardToStr(Board)
             bestScore = min(score, bestScore)
         return bestScore
 
 
 Board = chess.Board()
 board = boardToStr(Board)
-while True:
+
+
+def makemove(Board):
+    print("Legal Moves:\n", Board.legal_moves)
+    print("Your move:")
+    move = input()
+    islegal = 0
+    legalMoves = getLegalMoves(Board)
+    for moves in legalMoves:
+        if moves == move:
+            Board.push_san(move)
+            islegal = 1
+            break
+    if islegal == 0:
+        print("move is not legal")
+
+
+while Board.is_checkmate() == False:
     if(Board.turn):
-        print("Legal Moves:\n", Board.legal_moves)
-        print("Your move:")
-        move = input()
-        Board.push_san(move)
+        makemove(Board)
         print(Board)
+        board = boardToStr(Board)
+        print("E(x) = ", Evaluation(Board, board, True))
     else:
         print("Legal Moves:\n", Board.legal_moves)
         findBestMove(Board, board)
         print(Board)
+        board = boardToStr(Board)
+        print("E(x) = ", Evaluation(Board, board, False))
+print("Check Mate!")
