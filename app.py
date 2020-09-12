@@ -184,7 +184,7 @@ def getTotalScore(board, turn):
 
 def findBestMove(Board, board):
     legalMoves = getLegalMoves(Board)
-    bestScore = -999999
+    bestScore = 99999999
     bestMove = ""
     if legalMoves == "Check Mate!":
         print("Check Mate!")
@@ -194,7 +194,7 @@ def findBestMove(Board, board):
         score = minimax(Board, board, 0, False, -9999999, 9999999)
         Board.pop()
         print(score, "     ", move)
-        if score > bestScore:
+        if score < bestScore:
             bestScore = score
             bestMove = move
 
@@ -203,7 +203,7 @@ def findBestMove(Board, board):
 
 def minimax(Board, board, depth, isMaximizing, alpha, beta):
     legalMoves = getLegalMoves(Board)
-    if Board.is_game_over() == True or depth >= 4:
+    if Board.is_game_over() == True or depth >= 1:
         return getTotalScore(board, oppositeBoolean(isMaximizing))
 
     if isMaximizing == True:
@@ -254,17 +254,29 @@ def makemove(Board):
     if islegal == 0:
         print("move is not legal")
 
+def printBoard(Board):
+    print("  A B C D E F G H")
+    boardStr = boardToStr(Board)
+    lineNum = 1
+    for line in boardStr:
+        lineStr = str(line)
+        lineStr = lineStr[1:]
+        lineStr = lineStr[:len(lineStr)-2]
+        lineStr = lineStr.replace("'","")
+        lineStr = lineStr.replace(",","")
+        print(str(lineNum),lineStr)
+        lineNum += 1
 
 while Board.is_checkmate() == False:
     if(Board.turn):
         makemove(Board)
-        print(Board)
         board = boardToStr(Board)
         print("E(x) = ", Evaluation(Board, board, True))
     else:
         print("Legal Moves:\n", Board.legal_moves)
         findBestMove(Board, board)
-        print(Board)
         board = boardToStr(Board)
         print("E(x) = ", Evaluation(Board, board, False))
+    printBoard(Board)
+    
 print("Check Mate!")
