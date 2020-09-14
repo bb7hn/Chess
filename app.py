@@ -41,10 +41,10 @@ def boardToStr(board):
     return l
 
 
-def getLegalMoves(board):
-    if board.is_checkmate():
+def getLegalMoves(Board):
+    if Board.is_checkmate():
         return "Check Mate!"
-    legalMoves = str(board.legal_moves.count)
+    legalMoves = str(Board.legal_moves.count)
     legalMoves = legalMoves[legalMoves.index(
         "(")+1:legalMoves.index(")")].replace(" ", "").split(",")
     return legalMoves
@@ -134,41 +134,68 @@ def getCurrentPointOfTable(x, y, stone):
 
 
 def getPiecePoint(piece):
-    if piece == "R":
+    if piece == "Q":
+        return 9
+    elif piece == "R":
         return 5
-    elif piece == "N":
+    elif piece == "N" or piece == "B":
         return 3
-    elif piece == "B":
-        return 3
-    elif piece == "Q":
-        return 10
     elif piece == "P":
         return 1
+    elif piece == "q":
+        return 9
     elif piece == "r":
         return 5
-    elif piece == "n":
+    elif piece == "n" or piece == "b":
         return 3
-    elif piece == "b":
-        return 3
-    elif piece == "q":
-        return 10
     elif piece == "p":
         return 1
     else:
         return 0
 
 
-def Evaluation(Board, board, color):  # true for white false for black
-    if Board.is_checkmate():
-        return 2000
+def CountDoubledPawn(board):
+    pawnb = 0
+    pawnw = 0
+    scoreb = 0
+    scorew = 0
+    for i in range(8):
+        for j in range(8):
+            if board[j][i] == "p":
+                pawnb += 1
+            if board[j][i] == "P":
+                pawnw += 1
+        if pawnw >= 2:
+            scorew += 1
+        if pawnb >= 2:
+            scoreb += 1
+        pawnb = 0
+        pawnw = 0
+    return scorew - scoreb
+
+
+def Evaluation(Board, board):  # + point for white - point for black
     score = 0
     for i in range(8):
         for j in range(8):
-            if color and board[i][j].isupper():
+            if board[i][j].isupper():
                 score += getPiecePoint(board[i][j])
-            elif oppositeBoolean(color) and board[i][j].islower():
-                score += getPiecePoint(board[i][j])
+            else:
+                score -= getPiecePoint(board[i][j])
+    if(Board.is_checkmate):
+        score += 200
+    score -= 0.5*CountDoubledPawn(board)
+    score += int(Board.legal_moves.count())
     return score/1.61803398875
+
+
+"""f(p) = 200(K-K')
+       + 9(Q-Q')
+       + 5(R-R')
+       + 3(B-B' + N-N')
+       + 1(P-P')
+       - 0.5(D-D' + S-S' + I-I')
+       + 0.1(M-M') + ..."""
 
 
 def getTotalScore(board, turn):
@@ -212,7 +239,7 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
             Board.push_san(move)
             board = boardToStr(Board)
             score = minimax(Board, board, depth+1, False, alpha, beta) * \
-                Evaluation(Board, board, isMaximizing)
+                Evaluation(Board, board)
             Board.pop()
             board = boardToStr(Board)
             bestScore = max(score, bestScore)
@@ -226,7 +253,7 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
             Board.push_san(move)
             board = boardToStr(Board)
             score = minimax(Board, board, depth+1, True, alpha, beta) * \
-                Evaluation(Board, board, isMaximizing)
+                Evaluation(Board, board)
             Board.pop()
             board = boardToStr(Board)
             bestScore = min(score, bestScore)
@@ -254,29 +281,30 @@ def makemove(Board):
     if islegal == 0:
         print("move is not legal")
 
+
 def printBoard(Board):
     print("  A B C D E F G H")
     boardStr = boardToStr(Board)
-    lineNum = 1
+    lineNum = 8
     for line in boardStr:
         lineStr = str(line)
         lineStr = lineStr[1:]
         lineStr = lineStr[:len(lineStr)-2]
-        lineStr = lineStr.replace("'","")
-        lineStr = lineStr.replace(",","")
-        print(str(lineNum),lineStr)
-        lineNum += 1
+        lineStr = lineStr.replace("'", "")
+        lineStr = lineStr.replace(",", "")
+        print(str(lineNum), lineStr)
+        lineNum -= 1
+
 
 while Board.is_checkmate() == False:
     if(Board.turn):
         makemove(Board)
         board = boardToStr(Board)
-        print("E(x) = ", Evaluation(Board, board, True))
+        print("E(x) = ", Evaluation(Board, board))
     else:
         print("Legal Moves:\n", Board.legal_moves)
         findBestMove(Board, board)
         board = boardToStr(Board)
-        print("E(x) = ", Evaluation(Board, board, False))
+        print("E(x) = ", Evaluation(Board, board))
     printBoard(Board)
-    
 print("Check Mate!")
