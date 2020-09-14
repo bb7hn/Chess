@@ -1,9 +1,6 @@
 import chess
-import tkinter as tk
-from tkinter import filedialog, Text
-from PIL import ImageTk
-import time
-
+    
+from os import system
 
 def oppositeBoolean(boolean):
     if(boolean):
@@ -43,7 +40,7 @@ def boardToStr(board):
 
 def getLegalMoves(Board):
     if Board.is_checkmate():
-        return "Check Mate!"
+        return 0
     legalMoves = str(Board.legal_moves.count)
     legalMoves = legalMoves[legalMoves.index(
         "(")+1:legalMoves.index(")")].replace(" ", "").split(",")
@@ -185,8 +182,8 @@ def Evaluation(Board, board):  # + point for white - point for black
     if(Board.is_checkmate):
         score += 200
     score -= 0.5*CountDoubledPawn(board)
-    score += int(Board.legal_moves.count())
-    return score/1.61803398875
+    score += 0.1*int(Board.legal_moves.count())
+    return score
 
 
 """f(p) = 200(K-K')
@@ -208,9 +205,15 @@ def getTotalScore(board, turn):
                 totalscore += getCurrentPointOfTable(i, j, board[i][j])
     return totalscore
 
-
-def findBestMove(Board, board):
+import math
+import random
+def findBestMoveWhite(Board, board): # Beyaz
     legalMoves = getLegalMoves(Board)
+
+    numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
+    for i in range (numOfMoveToRemove):
+        del legalMoves[random.randint(0,len(legalMoves)-1)]
+        
     bestScore = -99999999
     bestMove = ""
     if legalMoves == "Check Mate!":
@@ -218,10 +221,34 @@ def findBestMove(Board, board):
         return 0
     for move in legalMoves:
         Board.push_san(move)
-        score = minimax(Board, board, 0, False, -9999999, 9999999)
+        score = minimax(Board, board, 0, True, 9999999, -9999999)
         Board.pop()
-        print(score, "     ", move)
+        #print(score, "     ", move)
         if score > bestScore:
+            bestScore = score
+            bestMove = move
+
+    Board.push_san(bestMove)
+    
+def findBestMove(Board, board): # Siyah
+    legalMoves = getLegalMoves(Board)
+    
+    numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
+    for i in range (numOfMoveToRemove):
+        del legalMoves[random.randint(0,len(legalMoves)-1)]
+        
+    legalMoves = getLegalMoves(Board)
+    bestScore = 99999999
+    bestMove = ""
+    if legalMoves == "Check Mate!":
+        print("Check Mate!")
+        return 0
+    for move in legalMoves:
+        Board.push_san(move)
+        score = minimax(Board, board, 0, False, 9999999, -9999999)
+        Board.pop()
+        #print(score, "     ", move)
+        if score < bestScore:
             bestScore = score
             bestMove = move
 
@@ -230,12 +257,16 @@ def findBestMove(Board, board):
 
 def minimax(Board, board, depth, isMaximizing, alpha, beta):
     legalMoves = getLegalMoves(Board)
-    if Board.is_game_over() == True or depth >= 2:
+    if legalMoves == 0:
+        return 0
+    if Board.is_checkmate == True or depth >= 10:
         return getTotalScore(board, oppositeBoolean(isMaximizing))
 
     if isMaximizing == True:
         bestScore = -9999999
         for move in legalMoves:
+            if move == "":
+                continue
             Board.push_san(move)
             board = boardToStr(Board)
             score = minimax(Board, board, depth+1, False, alpha, beta) + \
@@ -250,7 +281,9 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
     else:
         bestScore = 999999
         for move in legalMoves:
-            Board.push_san(move)
+            if move == "":
+                continue
+            Board.push_san(str(move))
             board = boardToStr(Board)
             score = minimax(Board, board, depth+1, True, alpha, beta) + \
                 Evaluation(Board, board)
@@ -296,15 +329,28 @@ def printBoard(Board):
         lineNum -= 1
 
 
-while Board.is_checkmate() == False:
+
+while 1:
+    if Board.is_checkmate():
+        print("Check Mate!")
+        break
+    if Board.is_repetition(20):
+        print("Draw")
+        break
     if(Board.turn):
+        #print("Legal Moves:\n", Board.legal_moves)
+        #findBestMoveWhite(Board, board)
+        #board = boardToStr(Board)
+        #print("E(x) = ", Evaluation(Board, board))
         makemove(Board)
         board = boardToStr(Board)
         print("E(x) = ", Evaluation(Board, board))
     else:
-        print("Legal Moves:\n", Board.legal_moves)
+        #print("Legal Moves:\n", Board.legal_moves)
         findBestMove(Board, board)
         board = boardToStr(Board)
-        print("E(x) = ", Evaluation(Board, board))
+        #print("E(x) = ", Evaluation(Board, board))
+    system('cls')
     printBoard(Board)
-print("Check Mate!")
+    
+
