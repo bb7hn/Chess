@@ -211,7 +211,7 @@ def getTotalScore(board, turn):
 
 def findBestMove(Board, board):
     legalMoves = getLegalMoves(Board)
-    bestScore = 99999999
+    bestScore = -99999999
     bestMove = ""
     if legalMoves == "Check Mate!":
         print("Check Mate!")
@@ -221,7 +221,7 @@ def findBestMove(Board, board):
         score = minimax(Board, board, 0, False, -9999999, 9999999)
         Board.pop()
         print(score, "     ", move)
-        if score < bestScore:
+        if score > bestScore:
             bestScore = score
             bestMove = move
 
@@ -230,7 +230,7 @@ def findBestMove(Board, board):
 
 def minimax(Board, board, depth, isMaximizing, alpha, beta):
     legalMoves = getLegalMoves(Board)
-    if Board.is_game_over() == True or depth >= 1:
+    if Board.is_game_over() == True or depth >= 2:
         return getTotalScore(board, oppositeBoolean(isMaximizing))
 
     if isMaximizing == True:
@@ -238,7 +238,7 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
         for move in legalMoves:
             Board.push_san(move)
             board = boardToStr(Board)
-            score = minimax(Board, board, depth+1, False, alpha, beta) * \
+            score = minimax(Board, board, depth+1, False, alpha, beta) + \
                 Evaluation(Board, board)
             Board.pop()
             board = boardToStr(Board)
@@ -252,7 +252,7 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
         for move in legalMoves:
             Board.push_san(move)
             board = boardToStr(Board)
-            score = minimax(Board, board, depth+1, True, alpha, beta) * \
+            score = minimax(Board, board, depth+1, True, alpha, beta) + \
                 Evaluation(Board, board)
             Board.pop()
             board = boardToStr(Board)
