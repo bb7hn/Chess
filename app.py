@@ -1,6 +1,9 @@
+import math
+import random
 import chess
-    
 from os import system
+import pygame as p
+
 
 def oppositeBoolean(boolean):
     if(boolean):
@@ -130,23 +133,23 @@ def getCurrentPointOfTable(x, y, stone):
         return 0
 
 
-def getPiecePoint(piece):
+def getPiecePoint(piece, x, y):
     if piece == "Q":
-        return 9
+        return 9 + getCurrentPointOfTable(x, y, piece)
     elif piece == "R":
-        return 5
+        return 5 + getCurrentPointOfTable(x, y, piece)
     elif piece == "N" or piece == "B":
-        return 3
+        return 3 + getCurrentPointOfTable(x, y, piece)
     elif piece == "P":
-        return 1
+        return 1 + getCurrentPointOfTable(x, y, piece)
     elif piece == "q":
-        return 9
+        return -9 + getCurrentPointOfTable(x, y, piece)
     elif piece == "r":
-        return 5
+        return -5 + getCurrentPointOfTable(x, y, piece)
     elif piece == "n" or piece == "b":
-        return 3
+        return -3 + getCurrentPointOfTable(x, y, piece)
     elif piece == "p":
-        return 1
+        return -1 + getCurrentPointOfTable(x, y, piece)
     else:
         return 0
 
@@ -175,14 +178,16 @@ def Evaluation(Board, board):  # + point for white - point for black
     score = 0
     for i in range(8):
         for j in range(8):
-            if board[i][j].isupper():
-                score += getPiecePoint(board[i][j])
-            else:
-                score -= getPiecePoint(board[i][j])
-    if(Board.is_checkmate):
+            if board[i][j] != ".":
+                if board[i][j].lower():
+                    score += getPiecePoint(board[i][j], i, j)
+                else:
+                    score -= getPiecePoint(board[i][j], i, j)
+    if Board.result() == "1-0":
         score += 200
+    elif Board.result() == "0-1":
+        score -= 200
     score -= 0.5*CountDoubledPawn(board)
-    score += 0.1*int(Board.legal_moves.count())
     return score
 
 
@@ -202,18 +207,17 @@ def getTotalScore(board, turn):
             if turn == True and board[i][j].isupper():
                 totalscore += getCurrentPointOfTable(i, j, board[i][j])
             elif turn == False and board[i][j].islower():
-                totalscore += getCurrentPointOfTable(i, j, board[i][j])
+                totalscore -= getCurrentPointOfTable(i, j, board[i][j])
     return totalscore
 
-import math
-import random
-def findBestMoveWhite(Board, board): # Beyaz
+
+def findBestMoveWhite(Board, board):  # For White
     legalMoves = getLegalMoves(Board)
 
-    numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
-    for i in range (numOfMoveToRemove):
-        del legalMoves[random.randint(0,len(legalMoves)-1)]
-        
+    """numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
+    for i in range(numOfMoveToRemove):
+        del legalMoves[random.randint(0, len(legalMoves)-1)]"""
+
     bestScore = -99999999
     bestMove = ""
     if legalMoves == "Check Mate!":
@@ -221,22 +225,23 @@ def findBestMoveWhite(Board, board): # Beyaz
         return 0
     for move in legalMoves:
         Board.push_san(move)
-        score = minimax(Board, board, 0, True, 9999999, -9999999)
+        score = minimax(Board, board, 0, False, 9999999, -9999999)
         Board.pop()
-        #print(score, "     ", move)
+        # print(score, "     ", move)
         if score > bestScore:
             bestScore = score
             bestMove = move
 
     Board.push_san(bestMove)
-    
-def findBestMove(Board, board): # Siyah
+
+
+def findBestMove(Board, board):  # For BLACK
     legalMoves = getLegalMoves(Board)
-    
-    numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
-    for i in range (numOfMoveToRemove):
-        del legalMoves[random.randint(0,len(legalMoves)-1)]
-        
+
+    """numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
+    for i in range(numOfMoveToRemove):
+        del legalMoves[random.randint(0, len(legalMoves)-1)]"""
+
     legalMoves = getLegalMoves(Board)
     bestScore = 99999999
     bestMove = ""
@@ -247,7 +252,7 @@ def findBestMove(Board, board): # Siyah
         Board.push_san(move)
         score = minimax(Board, board, 0, False, 9999999, -9999999)
         Board.pop()
-        #print(score, "     ", move)
+        # print(score, "     ", move)
         if score < bestScore:
             bestScore = score
             bestMove = move
@@ -259,8 +264,8 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
     legalMoves = getLegalMoves(Board)
     if legalMoves == 0:
         return 0
-    if Board.is_checkmate == True or depth >= 10:
-        return getTotalScore(board, oppositeBoolean(isMaximizing))
+    if Board.is_checkmate == True or depth >= 60:
+        return Evaluation(Board, board)
 
     if isMaximizing == True:
         bestScore = -9999999
@@ -269,8 +274,9 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
                 continue
             Board.push_san(move)
             board = boardToStr(Board)
-            score = minimax(Board, board, depth+1, False, alpha, beta) + \
-                Evaluation(Board, board)
+            score = Evaluation(Board, board)
+            score += minimax(Board, board, depth+1, False, alpha, beta)
+            score += getTotalScore(board, True)*0.7
             Board.pop()
             board = boardToStr(Board)
             bestScore = max(score, bestScore)
@@ -285,8 +291,9 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
                 continue
             Board.push_san(str(move))
             board = boardToStr(Board)
-            score = minimax(Board, board, depth+1, True, alpha, beta) + \
-                Evaluation(Board, board)
+            score = Evaluation(Board, board)
+            score += minimax(Board, board, depth+1, True, alpha, beta)
+            score += getTotalScore(board, False)*0.7
             Board.pop()
             board = boardToStr(Board)
             bestScore = min(score, bestScore)
@@ -329,28 +336,84 @@ def printBoard(Board):
         lineNum -= 1
 
 
+# GUI PART
+WIDTH = HEIGHT = 512
+DIMENSION = 8
+SQ_SIZE = HEIGHT // DIMENSION
+MAX_FPS = 60
+IMAGES = {}
 
-while 1:
-    if Board.is_checkmate():
-        print("Check Mate!")
-        break
-    if Board.is_repetition(20):
-        print("Draw")
-        break
-    if(Board.turn):
-        #print("Legal Moves:\n", Board.legal_moves)
-        #findBestMoveWhite(Board, board)
-        #board = boardToStr(Board)
-        #print("E(x) = ", Evaluation(Board, board))
-        makemove(Board)
-        board = boardToStr(Board)
-        print("E(x) = ", Evaluation(Board, board))
-    else:
-        #print("Legal Moves:\n", Board.legal_moves)
-        findBestMove(Board, board)
-        board = boardToStr(Board)
-        #print("E(x) = ", Evaluation(Board, board))
-    system('cls')
-    printBoard(Board)
-    
 
+def loadImages():
+    pieces = ['b', 'k',  'n', 'p', 'q', 'r']
+    for piece in pieces:
+        IMAGES[piece+"b"] = p.transform.scale(p.image.load(
+            "img/" + piece + "b.png"), (SQ_SIZE, SQ_SIZE))
+        IMAGES[piece+"w"] = p.transform.scale(p.image.load(
+            "img/" + piece + "w.png"), (SQ_SIZE, SQ_SIZE))
+
+
+def main(Board, board):
+    p.init()
+    screen = p.display.set_mode((WIDTH, HEIGHT))
+    clock = p.time.Clock()
+    screen.fill(p.Color("white"))
+    loadImages()
+    running = True
+    while running:
+        for e in p.event.get():
+            if e.type == p.QUIT:
+                running = False
+        if Board.is_checkmate():
+            print("Check Mate!")
+        if Board.is_repetition(20):
+            print("Draw")
+        if(Board.turn):
+            print("Legal Moves:\n", Board.legal_moves)
+
+            findBestMoveWhite(Board, board)
+            board = boardToStr(Board)
+            """
+            makemove(Board)
+            board = boardToStr(Board)
+            print("E(x) = ", Evaluation(Board, board))"""
+        else:
+            #print("Legal Moves:\n", Board.legal_moves)
+            findBestMove(Board, board)
+            board = boardToStr(Board)
+        print("E(x)= ", Evaluation(Board, board))
+        drawGameState(screen, board)
+        clock.tick(MAX_FPS)
+        p.display.flip()
+        p.time.delay(500)
+        print(Board.result())
+
+
+def drawGameState(screen, board):
+    drawBoard(screen)
+    drawPieces(screen, board)
+
+
+def drawBoard(screen):
+    colors = [p.Color("white"), p.Color("#D2691E")]
+    for r in range(DIMENSION):
+        for c in range(DIMENSION):
+            color = colors[(r+c) % 2]
+            p.draw.rect(screen, color, p.Rect(
+                c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
+
+
+def drawPieces(screen, board):
+    for r in range(DIMENSION):
+        for c in range(DIMENSION):
+            piece = board[r][c]
+            if piece != ".":
+                if piece.isupper():
+                    screen.blit(
+                        IMAGES[piece.lower()+"w"], p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
+                else:
+                    screen.blit(
+                        IMAGES[piece.lower()+"b"], p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
+
+
+main(Board, board)
