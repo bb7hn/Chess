@@ -255,30 +255,30 @@ def findBestMoveWhite(Board, board):  # For White
     Board.push_san(bestMove)
 
 
-def findBestMove(Board, board):  # For BLACK
+def findBestMove(Board, board):
     legalMoves = getLegalMoves(Board)
 
     """numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
     for i in range(numOfMoveToRemove):
         del legalMoves[random.randint(0, len(legalMoves)-1)]"""
 
-    bestScore = 99999999
+    bestScore = -99999999
     bestMove = ""
     if legalMoves == "Check Mate!":
         print("Check Mate!")
         return 0
     for move in legalMoves:
         Board.push_san(move)
-        score = minimax(Board, board, 0, True)
+        score = minimax(Board, board, 0, -99999999, 99999999, True)
         Board.pop()
         print(score, "            ", move)
-        if score < bestScore:
+        if score > bestScore:
             bestScore = score
             bestMove = move
     Board.push_san(bestMove)
 
 
-def minimax(Board, board, depth, isMaximizing):
+def minimax(Board, board, depth, alpha, beta, isMaximizing):
     legalMoves = getLegalMoves(Board)
     if legalMoves == 0:
         return 0
@@ -293,12 +293,14 @@ def minimax(Board, board, depth, isMaximizing):
             Board.push_san(move)
             board = boardToStr(Board)
             score = Evaluation(Board, board)
-            score += minimax(Board, board, depth+1, False)
+            score += minimax(Board, board, depth+1, alpha, beta, False)
             score += getTotalScore(board, True)*0.7
             Board.pop()
             board = boardToStr(Board)
             bestScore = max(score, bestScore)
-
+            alpha = max(alpha, score)
+            if beta <= alpha:
+                break
         return bestScore
     else:
         bestScore = 999999
@@ -308,12 +310,14 @@ def minimax(Board, board, depth, isMaximizing):
             Board.push_san(str(move))
             board = boardToStr(Board)
             score = Evaluation(Board, board)
-            score += minimax(Board, board, depth+1, True)
+            score += minimax(Board, board, depth+1, alpha, beta, True)
             score += getTotalScore(board, False)*0.7
             Board.pop()
             board = boardToStr(Board)
             bestScore = min(score, bestScore)
-
+            beta = min(beta, score)
+            if beta <= alpha:
+                break
         return bestScore
 
 
@@ -381,25 +385,17 @@ def main(Board, board):
         if Board.is_repetition(20):
             print("Draw")
         if(Board.turn):
-
-            findBestMoveWhite(Board, board)
-            board = boardToStr(Board)
-            """
-            print("Legal Moves:\n", Board.legal_moves)
-            makemove(Board)
-            
-            board = boardToStr(Board)
-            print("E(x) = ", Evaluation(Board, board))"""
-        else:
             #print("Legal Moves:\n", Board.legal_moves)
             findBestMove(Board, board)
             board = boardToStr(Board)
-        print("E(x)= ", Evaluation(Board, board))
+            """findBestMoveWhite(Board, board)"""
+        else:
+            print("Legal Moves:\n", Board.legal_moves)
+            makemove(Board)
+            board = boardToStr(Board)
         drawGameState(screen, board)
         clock.tick(MAX_FPS)
         p.display.flip()
-        p.time.delay(50)
-        print("Isolated Pawns: ", CountIsolatedPawn(board))
 
 
 def drawGameState(screen, board):
