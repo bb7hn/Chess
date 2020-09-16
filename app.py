@@ -135,23 +135,43 @@ def getCurrentPointOfTable(x, y, stone):
 
 def getPiecePoint(piece, x, y):
     if piece == "Q":
-        return 9 + getCurrentPointOfTable(x, y, piece)
+        return 9 + getCurrentPointOfTable(x, y, piece)*0.33
     elif piece == "R":
-        return 5 + getCurrentPointOfTable(x, y, piece)
+        return 5 + getCurrentPointOfTable(x, y, piece)*0.33
     elif piece == "N" or piece == "B":
-        return 3 + getCurrentPointOfTable(x, y, piece)
+        return 3 + getCurrentPointOfTable(x, y, piece)*0.33
     elif piece == "P":
-        return 1 + getCurrentPointOfTable(x, y, piece)
+        return 1 + getCurrentPointOfTable(x, y, piece)*0.33
     elif piece == "q":
-        return -9 + getCurrentPointOfTable(x, y, piece)
+        return -9 + getCurrentPointOfTable(x, y, piece)*0.33
     elif piece == "r":
-        return -5 + getCurrentPointOfTable(x, y, piece)
+        return -5 + getCurrentPointOfTable(x, y, piece)*0.33
     elif piece == "n" or piece == "b":
-        return -3 + getCurrentPointOfTable(x, y, piece)
+        return -3 + getCurrentPointOfTable(x, y, piece)*0.33
     elif piece == "p":
-        return -1 + getCurrentPointOfTable(x, y, piece)
+        return -1 + getCurrentPointOfTable(x, y, piece)*0.33
     else:
         return 0
+
+
+def CountIsolatedPawn(board):
+    pawnb = 0
+    pawnw = 0
+    isolatedw = 0
+    isolatedb = 0
+    for i in range(8):
+        for j in range(8):
+            if board[j][i] == "p":
+                pawnb += 1
+            if board[j][i] == "P":
+                pawnw += 1
+        if pawnw < 1:
+            isolatedw += 1
+        if pawnb < 1:
+            isolatedb += 1
+        pawnb = 0
+        pawnw = 0
+    return (isolatedw - isolatedb)*0.5
 
 
 def CountDoubledPawn(board):
@@ -166,12 +186,12 @@ def CountDoubledPawn(board):
             if board[j][i] == "P":
                 pawnw += 1
         if pawnw >= 2:
-            scorew += 1
+            scorew += pawnw/2
         if pawnb >= 2:
-            scoreb += 1
+            scoreb += pawnb/2
         pawnb = 0
         pawnw = 0
-    return scorew - scoreb
+    return (scorew - scoreb)*0.5
 
 
 def Evaluation(Board, board):  # + point for white - point for black
@@ -187,7 +207,8 @@ def Evaluation(Board, board):  # + point for white - point for black
         score += 200
     elif Board.result() == "0-1":
         score -= 200
-    score -= 0.5*CountDoubledPawn(board)
+    score -= CountDoubledPawn(board)
+    score -= CountIsolatedPawn(board)
     return score
 
 
@@ -231,7 +252,7 @@ def findBestMoveWhite(Board, board):  # For White
         if score > bestScore:
             bestScore = score
             bestMove = move
-
+    print(bestMove)
     Board.push_san(bestMove)
 
 
@@ -256,7 +277,7 @@ def findBestMove(Board, board):  # For BLACK
         if score < bestScore:
             bestScore = score
             bestMove = move
-
+    print(bestMove)
     Board.push_san(bestMove)
 
 
@@ -264,7 +285,7 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
     legalMoves = getLegalMoves(Board)
     if legalMoves == 0:
         return 0
-    if Board.is_checkmate == True or depth >= 60:
+    if Board.is_checkmate == True or depth >= 120:
         return Evaluation(Board, board)
 
     if isMaximizing == True:
@@ -355,10 +376,12 @@ def loadImages():
 
 def main(Board, board):
     p.init()
+    p.display.set_caption('Chess')
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
     loadImages()
+    drawGameState(screen, board)
     running = True
     while running:
         for e in p.event.get():
@@ -369,12 +392,13 @@ def main(Board, board):
         if Board.is_repetition(20):
             print("Draw")
         if(Board.turn):
-            print("Legal Moves:\n", Board.legal_moves)
 
             findBestMoveWhite(Board, board)
             board = boardToStr(Board)
             """
+            print("Legal Moves:\n", Board.legal_moves)
             makemove(Board)
+            
             board = boardToStr(Board)
             print("E(x) = ", Evaluation(Board, board))"""
         else:
@@ -385,8 +409,8 @@ def main(Board, board):
         drawGameState(screen, board)
         clock.tick(MAX_FPS)
         p.display.flip()
-        p.time.delay(500)
-        print(Board.result())
+        p.time.delay(50)
+        print("Isolated Pawns: ", CountIsolatedPawn(board))
 
 
 def drawGameState(screen, board):
