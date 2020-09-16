@@ -133,45 +133,25 @@ def getCurrentPointOfTable(x, y, stone):
         return 0
 
 
-def getPiecePoint(piece, x, y):
+def getPiecePoint(piece):
     if piece == "Q":
-        return 9 + getCurrentPointOfTable(x, y, piece)*0.33
+        return 9
     elif piece == "R":
-        return 5 + getCurrentPointOfTable(x, y, piece)*0.33
+        return 5
     elif piece == "N" or piece == "B":
-        return 3 + getCurrentPointOfTable(x, y, piece)*0.33
+        return 3
     elif piece == "P":
-        return 1 + getCurrentPointOfTable(x, y, piece)*0.33
+        return 1
     elif piece == "q":
-        return -9 + getCurrentPointOfTable(x, y, piece)*0.33
+        return -9
     elif piece == "r":
-        return -5 + getCurrentPointOfTable(x, y, piece)*0.33
+        return -5
     elif piece == "n" or piece == "b":
-        return -3 + getCurrentPointOfTable(x, y, piece)*0.33
+        return -3
     elif piece == "p":
-        return -1 + getCurrentPointOfTable(x, y, piece)*0.33
+        return -1
     else:
         return 0
-
-
-def CountIsolatedPawn(board):
-    pawnb = 0
-    pawnw = 0
-    isolatedw = 0
-    isolatedb = 0
-    for i in range(8):
-        for j in range(8):
-            if board[j][i] == "p":
-                pawnb += 1
-            if board[j][i] == "P":
-                pawnw += 1
-        if pawnw < 1:
-            isolatedw += 1
-        if pawnb < 1:
-            isolatedb += 1
-        pawnb = 0
-        pawnw = 0
-    return (isolatedw - isolatedb)*0.5
 
 
 def CountDoubledPawn(board):
@@ -198,17 +178,11 @@ def Evaluation(Board, board):  # + point for white - point for black
     score = 0
     for i in range(8):
         for j in range(8):
-            if board[i][j] != ".":
-                if board[i][j].lower():
-                    score += getPiecePoint(board[i][j], i, j)
-                else:
-                    score -= getPiecePoint(board[i][j], i, j)
+            score += getPiecePoint(board[i][j])
     if Board.result() == "1-0":
         score += 200
     elif Board.result() == "0-1":
         score -= 200
-    score -= CountDoubledPawn(board)
-    score -= CountIsolatedPawn(board)
     return score
 
 
@@ -219,40 +193,6 @@ def Evaluation(Board, board):  # + point for white - point for black
        + 1(P-P')
        - 0.5(D-D' + S-S' + I-I')
        + 0.1(M-M') + ..."""
-
-
-def getTotalScore(board, turn):
-    totalscore = 0
-    for i in range(8):
-        for j in range(8):
-            if turn == True and board[i][j].isupper():
-                totalscore += getCurrentPointOfTable(i, j, board[i][j])
-            elif turn == False and board[i][j].islower():
-                totalscore -= getCurrentPointOfTable(i, j, board[i][j])
-    return totalscore
-
-
-def findBestMoveWhite(Board, board):  # For White
-    legalMoves = getLegalMoves(Board)
-
-    """numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
-    for i in range(numOfMoveToRemove):
-        del legalMoves[random.randint(0, len(legalMoves)-1)]"""
-
-    bestScore = -99999999
-    bestMove = ""
-    if legalMoves == "Check Mate!":
-        print("Check Mate!")
-        return 0
-    for move in legalMoves:
-        Board.push_san(move)
-        score = minimax(Board, board, 0, False)
-        Board.pop()
-        print(score, "            ", move)
-        if score > bestScore:
-            bestScore = score
-            bestMove = move
-    Board.push_san(bestMove)
 
 
 def findBestMove(Board, board):
@@ -269,20 +209,21 @@ def findBestMove(Board, board):
         return 0
     for move in legalMoves:
         Board.push_san(move)
-        score = minimax(Board, board, 0, -99999999, 99999999, True)
+        score = minimax(Board, board, 0, -99999999, 99999999, False)
         Board.pop()
         print(score, "            ", move)
         if score > bestScore:
             bestScore = score
             bestMove = move
     Board.push_san(bestMove)
+    print(Board.fen())
 
 
 def minimax(Board, board, depth, alpha, beta, isMaximizing):
     legalMoves = getLegalMoves(Board)
     if legalMoves == 0:
         return 0
-    if Board.is_checkmate == True or depth >= 3:
+    if Board.is_checkmate == True or depth >= DEPTH:
         return Evaluation(Board, board)
 
     if isMaximizing == True:
@@ -294,7 +235,6 @@ def minimax(Board, board, depth, alpha, beta, isMaximizing):
             board = boardToStr(Board)
             score = Evaluation(Board, board)
             score += minimax(Board, board, depth+1, alpha, beta, False)
-            score += getTotalScore(board, True)*0.7
             Board.pop()
             board = boardToStr(Board)
             bestScore = max(score, bestScore)
@@ -311,7 +251,6 @@ def minimax(Board, board, depth, alpha, beta, isMaximizing):
             board = boardToStr(Board)
             score = Evaluation(Board, board)
             score += minimax(Board, board, depth+1, alpha, beta, True)
-            score += getTotalScore(board, False)*0.7
             Board.pop()
             board = boardToStr(Board)
             bestScore = min(score, bestScore)
@@ -319,21 +258,6 @@ def minimax(Board, board, depth, alpha, beta, isMaximizing):
             if beta <= alpha:
                 break
         return bestScore
-
-
-def makemove(Board):
-    print("Legal Moves:\n", Board.legal_moves)
-    print("Your move:")
-    move = input()
-    islegal = 0
-    legalMoves = getLegalMoves(Board)
-    for moves in legalMoves:
-        if moves == move:
-            Board.push_san(move)
-            islegal = 1
-            break
-    if islegal == 0:
-        print("move is not legal")
 
 
 def printBoard(Board):
@@ -356,6 +280,8 @@ DIMENSION = 8
 SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 60
 IMAGES = {}
+LETTERS = ["a", "b", "c", "d", "e", "f", "g", "h"]
+DEPTH = 2
 
 
 def loadImages():
@@ -374,40 +300,127 @@ def main(Board, board):
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
     loadImages()
-    drawGameState(screen, board)
     running = True
+    sqSelected = ()
+    col = -1
+    # no square is selected, keep track of the last click of the user(tuple: (row, col))
+    row = -1
+    # keep track of player clicks (two tuples: [(6,5), (4,4)])
+    playerClicks = []
     while running:
-        for e in p.event.get():
-            if e.type == p.QUIT:
-                running = False
+        board = boardToStr(Board)
+        turn = Board.turn
         if Board.is_checkmate():
             print("Check Mate!")
         if Board.is_repetition(20):
             print("Draw")
-        if(Board.turn):
+        if(turn):
             #print("Legal Moves:\n", Board.legal_moves)
             findBestMove(Board, board)
             board = boardToStr(Board)
             """findBestMoveWhite(Board, board)"""
         else:
-            print("Legal Moves:\n", Board.legal_moves)
-            makemove(Board)
-            board = boardToStr(Board)
-        drawGameState(screen, board)
+            for e in p.event.get():
+                if e.type == p.QUIT:
+                    running = False
+                elif e.type == p.MOUSEBUTTONDOWN:
+
+                    location = p.mouse.get_pos()  # (x, y) location of mouse
+                    col = location[0]//SQ_SIZE
+                    row = location[1]//SQ_SIZE
+                    if sqSelected == (col, row):  # the user clicked the same square twice
+                        sqSelected = ()
+                        playerClicks = []
+                    else:
+                        sqSelected = (row, col)
+                        # append for both 1st and 2nd clicks
+                        playerClicks.append(sqSelected)
+                        piece2 = board[row][col]
+
+                    if turn and piece2.islower() and len(playerClicks) < 1:
+                        sqSelected = ()
+                        playerClicks = []
+                    elif turn == False and piece2.isupper() and len(playerClicks) < 1:
+                        sqSelected = ()
+                        playerClicks = []
+                    if len(playerClicks) == 2:  # after the 2nd click
+                        move = createMoveFromPosition(playerClicks, piece2)
+                        makeMove(Board, move)
+                        print(move)
+                        sqSelected = ()
+                        playerClicks = []
+                        move = ""
+
+        board = boardToStr(Board)
+        drawGameState(screen, board, sqSelected)
         clock.tick(MAX_FPS)
         p.display.flip()
 
 
-def drawGameState(screen, board):
-    drawBoard(screen)
+def createMoveFromPosition(playerClicks, piece2):
+    board = boardToStr(Board)
+    move = ""
+    print(playerClicks)
+    posOne = playerClicks[0]  # 1st clicked position
+    posTwo = playerClicks[1]  # 2nd clicked position
+    piece = board[posOne[0]][posOne[1]]
+    if piece.upper() == "P":  # eğer piyonsa
+        if piece2 != ".":  # eğer taş varsa
+            move = LETTERS[posOne[1]]+"x" + \
+                LETTERS[posTwo[1]] + \
+                str(8-posTwo[0])  # yeme hamlesi yap
+        else:  # eğer taş yoksa
+            # ve hamle taşla aynı düzlemde değilse
+            move = LETTERS[posOne[1]]+str(8-posTwo[0])
+    if piece.upper() == "R":
+        if piece2 != ".":  # eğer taş varsa
+            move = "R"+"x"+LETTERS[posTwo[1]] + \
+                str(8-posTwo[0])  # yeme hamlesi yap
+        else:
+            move = "R"+LETTERS[posOne[1]]+str(8-posTwo[0])
+    if piece.upper() == "N":
+        if piece2 != ".":  # eğer taş varsa
+            move = "N"+"x"+LETTERS[posTwo[1]] + \
+                str(8-posTwo[0])  # yeme hamlesi yap
+        else:
+            move = "N"+LETTERS[posTwo[1]]+str(8-posTwo[0])
+    if piece.upper() == "B":
+        if piece2 != ".":  # eğer taş varsa
+            move = "B"+"x"+LETTERS[posTwo[1]] + \
+                str(8-posTwo[0])  # yeme hamlesi yap
+        else:
+            move = "B"+LETTERS[posTwo[1]]+str(8-posTwo[0])
+    if piece.upper() == "K":
+        if piece2 != ".":  # eğer taş varsa
+            move = "K"+"x"+LETTERS[posTwo[1]] + \
+                str(8-posTwo[0])  # yeme hamlesi yap
+        else:
+            move = "K"+LETTERS[posOne[1]]+str(8-posTwo[0])
+    if piece.upper() == "Q":
+        if piece2 != ".":  # eğer taş varsa
+            move = "Q"+"x"+LETTERS[posTwo[1]] + \
+                str(8-posTwo[0])  # yeme hamlesi yap
+        else:
+            move = "Q"+LETTERS[posTwo[1]]+str(8-posTwo[0])
+    return move
+
+
+def drawGameState(screen, board, sqSelected):
+    drawBoard(screen, sqSelected)
     drawPieces(screen, board)
 
 
-def drawBoard(screen):
-    colors = [p.Color("white"), p.Color("#D2691E")]
+def drawBoard(screen, sqSelected):
+    colors = [p.Color("white"), p.Color("#5f5f5f"), p.Color("#377b8c")]
     for r in range(DIMENSION):
         for c in range(DIMENSION):
-            color = colors[(r+c) % 2]
+            if sqSelected != (-1, -1):
+                if sqSelected == (r, c):
+                    color = colors[2]
+                else:
+                    color = colors[(r+c) % 2]
+            else:
+                color = colors[(r+c) % 2]
             p.draw.rect(screen, color, p.Rect(
                 c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
@@ -425,7 +438,21 @@ def drawPieces(screen, board):
                         IMAGES[piece.lower()+"b"], p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
-fen = "8/1n1k2n1/1p1p1p1p/pPpPpPpP/P1P1P1P1/6Q1/8/R3K2R b KQ - 0 1"
+def makeMove(Board, move):
+    islegal = 0
+    legalMoves = getLegalMoves(Board)
+    for moves in legalMoves:
+        if move in moves:
+            Board.push_san(moves)
+            islegal = 1
+            break
+    if islegal == 0:
+        print("move is not legal")
+    else:
+        print(Board.fen())
+
+
+fen = "rnbqkb1r/ppppnppp/4p3/6N1/8/8/PPPPPPPP/RNBQKB1R w KQkq - 2 3"
 Board = chess.Board()
 board = boardToStr(Board)
 main(Board, board)
