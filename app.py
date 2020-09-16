@@ -246,13 +246,12 @@ def findBestMoveWhite(Board, board):  # For White
         return 0
     for move in legalMoves:
         Board.push_san(move)
-        score = minimax(Board, board, 0, False, 9999999, -9999999)
+        score = minimax(Board, board, 0, False)
         Board.pop()
-        # print(score, "     ", move)
+        print(score, "            ", move)
         if score > bestScore:
             bestScore = score
             bestMove = move
-    print(bestMove)
     Board.push_san(bestMove)
 
 
@@ -263,7 +262,6 @@ def findBestMove(Board, board):  # For BLACK
     for i in range(numOfMoveToRemove):
         del legalMoves[random.randint(0, len(legalMoves)-1)]"""
 
-    legalMoves = getLegalMoves(Board)
     bestScore = 99999999
     bestMove = ""
     if legalMoves == "Check Mate!":
@@ -271,21 +269,20 @@ def findBestMove(Board, board):  # For BLACK
         return 0
     for move in legalMoves:
         Board.push_san(move)
-        score = minimax(Board, board, 0, False, 9999999, -9999999)
+        score = minimax(Board, board, 0, True)
         Board.pop()
-        # print(score, "     ", move)
+        print(score, "            ", move)
         if score < bestScore:
             bestScore = score
             bestMove = move
-    print(bestMove)
     Board.push_san(bestMove)
 
 
-def minimax(Board, board, depth, isMaximizing, alpha, beta):
+def minimax(Board, board, depth, isMaximizing):
     legalMoves = getLegalMoves(Board)
     if legalMoves == 0:
         return 0
-    if Board.is_checkmate == True or depth >= 120:
+    if Board.is_checkmate == True or depth >= 3:
         return Evaluation(Board, board)
 
     if isMaximizing == True:
@@ -296,14 +293,12 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
             Board.push_san(move)
             board = boardToStr(Board)
             score = Evaluation(Board, board)
-            score += minimax(Board, board, depth+1, False, alpha, beta)
+            score += minimax(Board, board, depth+1, False)
             score += getTotalScore(board, True)*0.7
             Board.pop()
             board = boardToStr(Board)
             bestScore = max(score, bestScore)
-            alpha = max(alpha, bestScore)
-            if beta <= alpha:
-                break
+
         return bestScore
     else:
         bestScore = 999999
@@ -313,19 +308,13 @@ def minimax(Board, board, depth, isMaximizing, alpha, beta):
             Board.push_san(str(move))
             board = boardToStr(Board)
             score = Evaluation(Board, board)
-            score += minimax(Board, board, depth+1, True, alpha, beta)
+            score += minimax(Board, board, depth+1, True)
             score += getTotalScore(board, False)*0.7
             Board.pop()
             board = boardToStr(Board)
             bestScore = min(score, bestScore)
-            beta = min(score, bestScore)
-            if beta <= alpha:
-                break
+
         return bestScore
-
-
-Board = chess.Board()
-board = boardToStr(Board)
 
 
 def makemove(Board):
@@ -440,4 +429,7 @@ def drawPieces(screen, board):
                         IMAGES[piece.lower()+"b"], p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
+fen = "8/1n1k2n1/1p1p1p1p/pPpPpPpP/P1P1P1P1/6Q1/8/R3K2R b KQ - 0 1"
+Board = chess.Board()
+board = boardToStr(Board)
 main(Board, board)
