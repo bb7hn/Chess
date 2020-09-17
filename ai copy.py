@@ -3,17 +3,43 @@ import random
 import chess
 from os import system
 import pygame as p
-WMS = []
-BMS = []
-WPS = []
-BPS = []
+from time import sleep
+from threading import Thread
+
+moveList = []
+bestScoreW = -99999999
+bestScoreB = 99999999
 
 
-def sumOfList(myList):
-    listSum = 0
-    for item in myList:
-        listSum += item
-    return listSum
+def calculateMove(move, color, isThisLast, Board, bekleme):
+    boardToUse = Board
+    boardToUse.push_san(move)
+    board = boardToStr(boardToUse)
+    score = minimax(boardToUse, board, 0, -99999999,
+                    99999999, oppositeBoolean(color))
+    boardToUse.pop()
+    print(score, "            ", move)
+    if color:
+        if score >= bestScoreW:
+            bestScoreW = score
+            bestMove = move
+            moveList.append((bestMove, bestScoreW))
+    else:
+        if score <= bestScoreB:
+            bestScoreB = score
+            bestMove = move
+            moveList.append((bestMove, bestScoreB))
+    if color:
+        moveList.sort(key=takeSecond, reverse=True)
+    else:
+        moveList.sort(key=takeSecond, reverse=False)
+    sleep(bekleme)
+    if isThisLast:
+        bestScoreW = -99999999
+        bestScoreB = 99999999
+        bestMove = takeBestMoveRandomly(moveList)
+        Board.push_san(bestMove)
+        p.mixer.Channel(1).play(p.mixer.Sound('played.wav'))
 
 
 def oppositeBoolean(boolean):
@@ -63,89 +89,6 @@ def getLegalMoves(Board):
     return legalMoves
 
 
-def getCurrentPointOfTable(x, y, stone):
-    king = [[-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [-2.0, -3.0, -3.0, -4.0, -4.0, -3.0, -3.0, -2.0],
-            [-1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0],
-            [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 2.0],
-            [2.0, 3.0, 1.0, 0.0, 0.0, 1.0, 3.0, 2.0]]
-
-    rook = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0]]
-
-    knight = [[-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
-              [-4.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, -4.0],
-              [-3.0, 0.0, 1.0, 1.5, 1.5, 1.0, 0.0, -3.0],
-              [-3.0, 0.5, 1.5, 2.0, 2.0, 1.5, 0.5, -3.0],
-              [-3.0, 0.5, 1.5, 2.0, 2.0, 1.5, 0.5, -3.0],
-              [-3.0, 0.5, 1.0, 1.5, 1.5, 1.0, 0.5, -3.0],
-              [-4.0, -2.0, 0.0, 0.5, 0.5, 0.0, -2.0, -4.0],
-              [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]]
-
-    pawn = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
-            [1.0, 1.0, 2.0, 3.0, 3.0, 2.0, 1.0, 1.0],
-            [0.5, 0.5, 1.0, 2.5, 2.5, 1.0, 0.5, 0.5],
-            [0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 0.0],
-            [0.0, -0.5, -1.0, 0.0, 0.0, -1.0, -0.5, 0.5],
-            [0.5, 1.0, 1.0, -2.0, -2.0,  1.0, 1.0, 0.5],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
-
-    queen = [[-2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
-             [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
-             [-1.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0, -1.0],
-             [-0.5, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0, -0.5],
-             [0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0, -0.5],
-             [-1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.0, -1.0],
-             [-1.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, -1.0],
-             [-2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]]
-
-    bishop = [[-2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
-              [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
-              [-1.0, 0.0, 0.5, 1.0, 1.0, 0.5, 0.0, -1.0],
-              [-1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, -1.0],
-              [-1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, -1.0],
-              [-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0],
-              [-1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, -1.0],
-              [-2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]]
-
-    if stone == "R":
-        return rook[x][y]
-    elif stone == "N":
-        return knight[x][y]
-    elif stone == "B":
-        return bishop[x][y]
-    elif stone == "Q":
-        return queen[x][y]
-    elif stone == "K":
-        return king[x][y]
-    elif stone == "P":
-        return pawn[x][y]
-    elif stone == "r":
-        return -rook[7-x][7-y]
-    elif stone == "n":
-        return -knight[7-x][7-y]
-    elif stone == "b":
-        return -bishop[7-x][7-y]
-    elif stone == "q":
-        return -queen[7-x][7-y]
-    elif stone == "k":
-        return -king[7-x][7-y]
-    elif stone == "p":
-        return -pawn[7-x][7-y]
-    else:
-        return 0
-
-
 def getPiecePoint(piece):
     if piece == "Q":
         return 9
@@ -167,26 +110,6 @@ def getPiecePoint(piece):
         return 0
 
 
-def CountDoubledPawn(board):
-    pawnb = 0
-    pawnw = 0
-    scoreb = 0
-    scorew = 0
-    for i in range(8):
-        for j in range(8):
-            if board[j][i] == "p":
-                pawnb += 1
-            if board[j][i] == "P":
-                pawnw += 1
-        if pawnw >= 2:
-            scorew += pawnw/2
-        if pawnb >= 2:
-            scoreb += pawnb/2
-        pawnb = 0
-        pawnw = 0
-    return (scorew - scoreb)*0.5
-
-
 def Evaluation(Board, board):  # + point for white - point for black
     score = 0
     for i in range(8):
@@ -199,22 +122,11 @@ def Evaluation(Board, board):  # + point for white - point for black
     return score
 
 
-"""f(p) = 200(K-K')
-       + 9(Q-Q')
-       + 5(R-R')
-       + 3(B-B' + N-N')
-       + 1(P-P')
-       - 0.5(D-D' + S-S' + I-I')
-       + 0.1(M-M') + ..."""
-
-
 def takeSecond(elem):
     return elem[1]
 
 
 def takeBestMoveRandomly(moveList):
-    if len(moveList) < 1:
-        return 0
     bestMoveScore = moveList[0][1]  # take best move's score
     bestMoveList = []
     for move in moveList:
@@ -227,53 +139,25 @@ def takeBestMoveRandomly(moveList):
 
 
 def findBestMove(Board, board, color):
+
     legalMoves = getLegalMoves(Board)
-    moveList = []
     """numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
     for i in range(numOfMoveToRemove):
         del legalMoves[random.randint(0, len(legalMoves)-1)]"""
-    if color:
-        bestScore = -99999999
-    else:
-        bestScore = 99999999
-    bestMove = ""
+
     if legalMoves == 1:
         print("Check Mate!")
         return 0
+    counter = 0
+    isThisLast = False
     for move in legalMoves:
-        if len(WMS) <= 5 and ("R" or "K" or "Q" in move):
-            legalMoves.remove(move)
-        elif len(WMS) <= 9 and "K" in move:
-            legalMoves.remove(move)
-    for move in legalMoves:
-        Board.push_san(move)
-        score = minimax(Board, board, 0, -99999999,
-                        99999999, oppositeBoolean(color))
-        Board.pop()
-        print(score, "            ", move)
-        if color:
-            if score >= bestScore:
-                bestScore = score
-                bestMove = move
-                moveList.append((bestMove, bestScore))
-        else:
-            if score <= bestScore:
-                bestScore = score
-                bestMove = move
-                moveList.append((bestMove, bestScore))
-        if color:
-            moveList.sort(key=takeSecond, reverse=True)
-        else:
-            moveList.sort(key=takeSecond, reverse=False)
-    bestMove = takeBestMoveRandomly(moveList)
-    Board.push_san(bestMove)
-    if color:
-        WMS.append(1)
-        WPS.append(bestScore)
-    else:
-        BMS.append(1)
-        BPS.append(bestScore)
-    p.mixer.Channel(1).play(p.mixer.Sound('played.wav'))
+        if counter == len(legalMoves)-1:
+            isThisLast = True
+        calculatorOne = Thread(target=calculateMove,
+                               args=(move, color, isThisLast, Board, 1))
+        calculatorOne.start()
+        counter += 1
+
     # print(Board.fen())
 
 
@@ -375,11 +259,10 @@ def main(Board, board):
         p.display.flip()
         if Board.is_checkmate():
             print("Check Mate!")
-            running = False
         if Board.is_repetition(20):
             print("Draw")
         if(turn):
-            #print("Legal Moves:\n", Board.legal_moves)
+            # print("Legal Moves:\n", Board.legal_moves)
             print("White's Move:\n")
             findBestMove(Board, board, turn)  # White's move
             board = boardToStr(Board)
@@ -515,16 +398,5 @@ DEPTH = 2
 fen = "rnbqkbnr/pppp1p1p/6p1/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 1"
 Board = chess.Board()
 board = boardToStr(Board)
-main(Board, board)
-BPS = sumOfList(BPS)
-BMS = sumOfList(BMS)
-WPS = sumOfList(WPS)
-WMS = sumOfList(WMS)
-averageB = BPS/BMS
-averageW = WPS/WMS
-print("Black's Total Score:  ", str(BPS))
-print("Black's Total Move:  ", str(BMS))
-print("White's Total Score:  ", str(WPS))
-print("White's Total Move:  ", str(WMS))
-print("Black's Score Average:  ", str(averageB))
-print("White's Score Average:  ", str(averageW))
+findBestMove(Board, board, True)
+#main(Board, board)
