@@ -195,13 +195,28 @@ def Evaluation(Board, board):  # + point for white - point for black
        + 0.1(M-M') + ..."""
 
 
-def findBestMove(Board, board, color):  # isMaximazing False yollayınca daha doğru çalışıyor
-    legalMoves = getLegalMoves(Board)
+def takeSecond(elem):
+    return elem[1]
 
+
+def takeBestMoveRandomly(moveList):
+    bestMoveScore = moveList[0][1]  # take best move's score
+    bestMoveList = []
+    for move in moveList:
+        if move[1] == bestMoveScore:  # if move score is equal best score
+            bestMoveList.append(move)  # take it to the list
+    # return the list
+    return bestMoveList[random.randint(0, len(bestMoveList)-1)][0]
+
+# sort the move list from higher point to lower point
+
+
+def findBestMove(Board, board, color):
+    legalMoves = getLegalMoves(Board)
+    moveList = []
     """numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
     for i in range(numOfMoveToRemove):
         del legalMoves[random.randint(0, len(legalMoves)-1)]"""
-
     if color:
         bestScore = -99999999
     else:
@@ -216,16 +231,25 @@ def findBestMove(Board, board, color):  # isMaximazing False yollayınca daha do
         Board.pop()
         print(score, "            ", move)
         if color:
-            if score > bestScore:
+            if score >= bestScore:
                 bestScore = score
                 bestMove = move
+                moveList.append((bestMove, bestScore))
         else:
-            if score < bestScore:
+            if score <= bestScore:
                 bestScore = score
                 bestMove = move
+                moveList.append((bestMove, bestScore))
+
+    if color:  # if White's turn sort from higher to lower
+        moveList.sort(key=takeSecond, reverse=True)
+    else:  # if Black's turn sort from lower to higher with that way move choiser function chose the best move for each side in White's turn best move for white in Black's turn worst move for White
+        moveList.sort(key=takeSecond, reverse=False)
+
+    bestMove = takeBestMoveRandomly(moveList)
 
     Board.push_san(bestMove)
-    print(Board.fen())
+    # print(Board.fen())
 
 
 def minimax(Board, board, depth, alpha, beta, isMaximizing):
@@ -290,7 +314,6 @@ SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 60
 IMAGES = {}
 LETTERS = ["a", "b", "c", "d", "e", "f", "g", "h"]
-DEPTH = 3
 
 
 def loadImages():
@@ -437,6 +460,59 @@ def drawBoard(screen, sqSelected):
                 color = colors[(r+c) % 2]
             p.draw.rect(screen, color, p.Rect(
                 c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
+            BoardLetters(screen, r, c)
+
+
+def BoardLetters(screen, r, c):
+    font = p.font.SysFont('segoescript', 15, bold=20)
+    if r == 0 and c == 0:
+        screen.blit(font.render('8', True, (0, 0, 0)),
+                    (c*SQ_SIZE, r*SQ_SIZE-6))
+    if r == 1 and c == 0:
+        screen.blit(font.render('7', True, (0, 0, 0)),
+                    (c*SQ_SIZE, r*SQ_SIZE-6))
+    if r == 2 and c == 0:
+        screen.blit(font.render('6', True, (0, 0, 0)),
+                    (c*SQ_SIZE, r*SQ_SIZE-6))
+    if r == 3 and c == 0:
+        screen.blit(font.render('5', True, (0, 0, 0)),
+                    (c*SQ_SIZE, r*SQ_SIZE-6))
+    if r == 4 and c == 0:
+        screen.blit(font.render('4', True, (0, 0, 0)),
+                    (c*SQ_SIZE, r*SQ_SIZE-6))
+    if r == 5 and c == 0:
+        screen.blit(font.render('3', True, (0, 0, 0)),
+                    (c*SQ_SIZE, r*SQ_SIZE-6))
+    if r == 6 and c == 0:
+        screen.blit(font.render('2', True, (0, 0, 0)),
+                    (c*SQ_SIZE, r*SQ_SIZE-6))
+    if r == 7 and c == 0:
+        screen.blit(font.render('1', True, (0, 0, 0)),
+                    (c*SQ_SIZE, r*SQ_SIZE-6))
+    if r == 7 and c == 0:
+        screen.blit(font.render('A', True, (0, 0, 0)),
+                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+    if r == 7 and c == 1:
+        screen.blit(font.render('B', True, (0, 0, 0)),
+                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+    if r == 7 and c == 2:
+        screen.blit(font.render('C', True, (0, 0, 0)),
+                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+    if r == 7 and c == 3:
+        screen.blit(font.render('D', True, (0, 0, 0)),
+                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+    if r == 7 and c == 4:
+        screen.blit(font.render('E', True, (0, 0, 0)),
+                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+    if r == 7 and c == 5:
+        screen.blit(font.render('F', True, (0, 0, 0)),
+                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+    if r == 7 and c == 6:
+        screen.blit(font.render('G', True, (0, 0, 0)),
+                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+    if r == 7 and c == 7:
+        screen.blit(font.render('H', True, (0, 0, 0)),
+                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
 
 
 def drawPieces(screen, board):
@@ -466,7 +542,8 @@ def makeMove(Board, move):
         print(Board.fen())
 
 
-fen = "rnbqkb1r/ppppp1pN/5p1n/8/8/3P4/PPP1PPPP/RNBQKBR1 w KQkq - 0 7"
+DEPTH = 3
+fen = "r1b2k1r/ppp2ppp/2p5/8/2B5/4N3/PPPn1PPP/R4RK1 w - - 0 1"
 Board = chess.Board(fen)
 board = boardToStr(Board)
 main(Board, board)

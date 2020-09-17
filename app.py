@@ -195,9 +195,25 @@ def Evaluation(Board, board):  # + point for white - point for black
        + 0.1(M-M') + ..."""
 
 
+def takeSecond(elem):
+    return elem[1]
+
+
+def takeBestMoveRandomly(moveList):
+    bestMoveScore = moveList[0][1]  # take best move's score
+    bestMoveList = []
+    for move in moveList:
+        if move[1] == bestMoveScore:  # if move score is equal best score
+            bestMoveList.append(move)  # take it to the list
+    # return the list
+    return bestMoveList[random.randint(0, len(bestMoveList)-1)][0]
+
+# sort the move list from higher point to lower point
+
+
 def findBestMove(Board, board, isMaximazing):
     legalMoves = getLegalMoves(Board)
-
+    moveList = []
     """numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
     for i in range(numOfMoveToRemove):
         del legalMoves[random.randint(0, len(legalMoves)-1)]"""
@@ -212,11 +228,15 @@ def findBestMove(Board, board, isMaximazing):
         score = minimax(Board, board, 0, -99999999, 99999999, isMaximazing)
         Board.pop()
         print(score, "            ", move)
-        if score > bestScore:
+        if score >= bestScore:
             bestScore = score
             bestMove = move
+            moveList.append((bestMove, bestScore))
+    moveList.sort(key=takeSecond, reverse=True)
+    bestMove = takeBestMoveRandomly(moveList)
+
     Board.push_san(bestMove)
-    print(Board.fen())
+    # print(Board.fen())
 
 
 def minimax(Board, board, depth, alpha, beta, isMaximizing):
@@ -509,7 +529,7 @@ def makeMove(Board, move):
         print(Board.fen())
 
 
-fen = "7r/p2k2pp/2qp3n/8/1Q6/4P3/PPP1KPPP/RNB3NR b - - 0 22"
+fen = "r1b2k1r/ppp2ppp/2p5/8/2B5/4N3/PPPn1PPP/R4RK1 w - - 0 1"
 Board = chess.Board(fen)
 board = boardToStr(Board)
 main(Board, board)
