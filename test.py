@@ -83,7 +83,7 @@ def main(board, turn):
 
                 if len(playerClicks) == 2:  # after the 2nd click
                     move = createMoveFromPosition(playerClicks, piece2)
-                    print(Board.legal_moves)
+                    print(playerClicks)
                     print(move)
                     Board.push_san(move)
                     sqSelected = ()
@@ -172,6 +172,7 @@ def drawPieces(screen, board):
                         IMAGES[piece.lower()+"b"], p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
-Board = chess.Board()
+fen = "rnbqk1nr/pppp1ppp/3b4/4p3/8/8/PPPPPPPP/RNBQKBNR b KQkq - 5 4"
+Board = chess.Board(fen)
 board = boardToStr(Board)
 main(board, Board.turn)

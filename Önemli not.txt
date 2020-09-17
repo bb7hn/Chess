@@ -1,0 +1,8 @@
+Hesaplanan hamlelerden en iyi puanla aynı puanda olan hamleleri listeye aktarıp 
+random seçim yaptırmak varyan farklılıklarını sağlayabilir
+listeden seçim yapan fonksiyon yalnızca random seçimle değil
+listedeki at vezir fil piyon hamlelerini ayırt ederek
+ geçen hamle sayısını da 
+ göz önünde bulundurarak(oyun başı piyon oyun ortası ve sonu at fil vezir)
+ hamleleri seleksiyona uğratır böylece kalan hamlelerden random seçim yapılarak
+ sürekli aynı varyant tekrarlarının önüne geçilebilir mi acaba diye bi düşündüm.

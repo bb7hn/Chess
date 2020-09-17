@@ -195,26 +195,35 @@ def Evaluation(Board, board):  # + point for white - point for black
        + 0.1(M-M') + ..."""
 
 
-def findBestMove(Board, board, isMaximazing):
+def findBestMove(Board, board, color):  # isMaximazing False yollayınca daha doğru çalışıyor
     legalMoves = getLegalMoves(Board)
 
     """numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
     for i in range(numOfMoveToRemove):
         del legalMoves[random.randint(0, len(legalMoves)-1)]"""
 
-    bestScore = -99999999
+    if color:
+        bestScore = -99999999
+    else:
+        bestScore = 99999999
     bestMove = ""
     if legalMoves == "Check Mate!":
         print("Check Mate!")
         return 0
     for move in legalMoves:
         Board.push_san(move)
-        score = minimax(Board, board, 0, -99999999, 99999999, isMaximazing)
+        score = minimax(Board, board, 0, -99999999, 99999999, False)
         Board.pop()
         print(score, "            ", move)
-        if score > bestScore:
-            bestScore = score
-            bestMove = move
+        if color:
+            if score > bestScore:
+                bestScore = score
+                bestMove = move
+        else:
+            if score < bestScore:
+                bestScore = score
+                bestMove = move
+
     Board.push_san(bestMove)
     print(Board.fen())
 
@@ -281,7 +290,7 @@ SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 60
 IMAGES = {}
 LETTERS = ["a", "b", "c", "d", "e", "f", "g", "h"]
-DEPTH = 2
+DEPTH = 3
 
 
 def loadImages():
@@ -308,45 +317,53 @@ def main(Board, board):
     # keep track of player clicks (two tuples: [(6,5), (4,4)])
     playerClicks = []
     while running:
+        for e in p.event.get():
+            if e.type == p.QUIT:
+                running = False
         board = boardToStr(Board)
         turn = Board.turn
+        board = boardToStr(Board)
+        drawGameState(screen, board, sqSelected)
+        clock.tick(MAX_FPS)
+        p.display.flip()
         if Board.is_checkmate():
             print("Check Mate!")
         if Board.is_repetition(20):
             print("Draw")
         if(turn):
             #print("Legal Moves:\n", Board.legal_moves)
-            findBestMove(Board, board, False)  # White's move
+            findBestMove(Board, board, turn)  # White's move
             board = boardToStr(Board)
         else:
-            for e in p.event.get():
-                if e.type == p.QUIT:
-                    running = False
-                elif e.type == p.MOUSEBUTTONDOWN:
-                    if e.button == 3:
-                        sqSelected = ()
-                        playerClicks = []
-                        piece2 = ""
-                        continue
-                    location = p.mouse.get_pos()  # (x, y) location of mouse
-                    col = location[0]//SQ_SIZE
-                    row = location[1]//SQ_SIZE
-                    if sqSelected == (col, row):  # the user clicked the same square twice
-                        sqSelected = ()
-                        playerClicks = []
-                    else:
-                        sqSelected = (row, col)
-                        # append for both 1st and 2nd clicks
-                        playerClicks.append(sqSelected)
-                        piece2 = board[row][col]
+            findBestMove(Board, board, turn)  # Black's move
+            board = boardToStr(Board)
+        """elif e.type == p.MOUSEBUTTONDOWN:
 
-                    if len(playerClicks) == 2:  # after the 2nd click
-                        move = createMoveFromPosition(playerClicks, piece2)
-                        makeMove(Board, move)
-                        print(playerClicks)
-                        sqSelected = ()
-                        playerClicks = []
-                        move = ""
+                location = p.mouse.get_pos()  # (x, y) location of mouse
+                col = location[0]//SQ_SIZE
+                row = location[1]//SQ_SIZE
+                if sqSelected == (col, row):  # the user clicked the same square twice
+                    sqSelected = ()
+                    playerClicks = []
+                else:
+                    sqSelected = (row, col)
+                    # append for both 1st and 2nd clicks
+                    playerClicks.append(sqSelected)
+                    piece2 = board[row][col]
+
+                if turn and piece2.islower() and len(playerClicks) < 1:
+                    sqSelected = ()
+                    playerClicks = []
+                elif turn == False and piece2.isupper() and len(playerClicks) < 1:
+                    sqSelected = ()
+                    playerClicks = []
+                if len(playerClicks) == 2:  # after the 2nd click
+                    move = createMoveFromPosition(playerClicks, piece2)
+                    makeMove(Board, move)
+                    print(move)
+                    sqSelected = ()
+                    playerClicks = []
+                    move = """
 
         board = boardToStr(Board)
         drawGameState(screen, board, sqSelected)
@@ -368,13 +385,13 @@ def createMoveFromPosition(playerClicks, piece2):
                 str(8-posTwo[0])  # yeme hamlesi yap
         else:  # eğer taş yoksa
             # ve hamle taşla aynı düzlemde değilse
-            move = LETTERS[posTwo[1]]+str(8-posTwo[0])
+            move = LETTERS[posOne[1]]+str(8-posTwo[0])
     if piece.upper() == "R":
         if piece2 != ".":  # eğer taş varsa
             move = "R"+"x"+LETTERS[posTwo[1]] + \
                 str(8-posTwo[0])  # yeme hamlesi yap
         else:
-            move = "R"+LETTERS[posTwo[1]]+str(8-posTwo[0])
+            move = "R"+LETTERS[posOne[1]]+str(8-posTwo[0])
     if piece.upper() == "N":
         if piece2 != ".":  # eğer taş varsa
             move = "N"+"x"+LETTERS[posTwo[1]] + \
@@ -392,14 +409,13 @@ def createMoveFromPosition(playerClicks, piece2):
             move = "K"+"x"+LETTERS[posTwo[1]] + \
                 str(8-posTwo[0])  # yeme hamlesi yap
         else:
-            move = "K"+LETTERS[posTwo[1]]+str(8-posTwo[0])
+            move = "K"+LETTERS[posOne[1]]+str(8-posTwo[0])
     if piece.upper() == "Q":
         if piece2 != ".":  # eğer taş varsa
             move = "Q"+"x"+LETTERS[posTwo[1]] + \
                 str(8-posTwo[0])  # yeme hamlesi yap
         else:
             move = "Q"+LETTERS[posTwo[1]]+str(8-posTwo[0])
-    print(move)
     return move
 
 
@@ -421,59 +437,6 @@ def drawBoard(screen, sqSelected):
                 color = colors[(r+c) % 2]
             p.draw.rect(screen, color, p.Rect(
                 c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
-            BoardLetters(screen, r, c)
-
-
-def BoardLetters(screen, r, c):
-    font = p.font.SysFont('segoescript', 15, bold=20)
-    if r == 0 and c == 0:
-        screen.blit(font.render('8', True, (0, 0, 0)),
-                    (c*SQ_SIZE, r*SQ_SIZE-6))
-    if r == 1 and c == 0:
-        screen.blit(font.render('7', True, (0, 0, 0)),
-                    (c*SQ_SIZE, r*SQ_SIZE-6))
-    if r == 2 and c == 0:
-        screen.blit(font.render('6', True, (0, 0, 0)),
-                    (c*SQ_SIZE, r*SQ_SIZE-6))
-    if r == 3 and c == 0:
-        screen.blit(font.render('5', True, (0, 0, 0)),
-                    (c*SQ_SIZE, r*SQ_SIZE-6))
-    if r == 4 and c == 0:
-        screen.blit(font.render('4', True, (0, 0, 0)),
-                    (c*SQ_SIZE, r*SQ_SIZE-6))
-    if r == 5 and c == 0:
-        screen.blit(font.render('3', True, (0, 0, 0)),
-                    (c*SQ_SIZE, r*SQ_SIZE-6))
-    if r == 6 and c == 0:
-        screen.blit(font.render('2', True, (0, 0, 0)),
-                    (c*SQ_SIZE, r*SQ_SIZE-6))
-    if r == 7 and c == 0:
-        screen.blit(font.render('1', True, (0, 0, 0)),
-                    (c*SQ_SIZE, r*SQ_SIZE-6))
-    if r == 7 and c == 0:
-        screen.blit(font.render('A', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
-    if r == 7 and c == 1:
-        screen.blit(font.render('B', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
-    if r == 7 and c == 2:
-        screen.blit(font.render('C', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
-    if r == 7 and c == 3:
-        screen.blit(font.render('D', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
-    if r == 7 and c == 4:
-        screen.blit(font.render('E', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
-    if r == 7 and c == 5:
-        screen.blit(font.render('F', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
-    if r == 7 and c == 6:
-        screen.blit(font.render('G', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
-    if r == 7 and c == 7:
-        screen.blit(font.render('H', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
 
 
 def drawPieces(screen, board):
@@ -490,26 +453,20 @@ def drawPieces(screen, board):
 
 
 def makeMove(Board, move):
-    moveToPlay = ""
     islegal = 0
     legalMoves = getLegalMoves(Board)
     for moves in legalMoves:
         if move in moves:
-            moveToPlay = moves
-            islegal = 1
-        if move == moves:
-            moveToPlay = moves
+            Board.push_san(moves)
             islegal = 1
             break
-
     if islegal == 0:
         print("move is not legal")
     else:
-        Board.push_san(moveToPlay)
         print(Board.fen())
 
 
-fen = "7r/p2k2pp/2qp3n/8/1Q6/4P3/PPP1KPPP/RNB3NR b - - 0 22"
+fen = "rnbqkb1r/ppppp1pN/5p1n/8/8/3P4/PPP1PPPP/RNBQKBR1 w KQkq - 0 7"
 Board = chess.Board(fen)
 board = boardToStr(Board)
 main(Board, board)
