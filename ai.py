@@ -68,7 +68,7 @@ def getLegalMoves(Board):
 
 
 def getCurrentPointOfTable(board):
-    PawnTableW = [
+    PawnTable = [
         [0	,	0	,	0	,	0	,	0	,	0	,	0	,	0	],
         [10	,	10	,	0	,	-10	,	-10	,	0	,	10	,	10	],
         [5	,	0	,	0	,	5	,	5	,	0	,	0	,	5	],
@@ -78,10 +78,8 @@ def getCurrentPointOfTable(board):
         [20	,	20	,	20	,	30	,	30	,	20	,	20	,	20	],
         [0	,	0	,	0	,	0	,	0	,	0	,	0	,	0]
     ]
-    PawnTableB = PawnTableW
-    PawnTableB.reverse()
 
-    KnightTableW = [
+    KnightTable = [
         [0	,	-10	,	0	,	0	,	0	,	0	,	-10	,	0	],
         [0	,	0	,	0	,	5	,	5	,	0	,	0	,	0	],
         [0	,	0	,	10	,	10	,	10	,	10	,	0	,	0	],
@@ -91,10 +89,8 @@ def getCurrentPointOfTable(board):
         [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
         [0	,	0	,	0	,	0	,	0	,	0	,	0	,	0]
     ]
-    KnightTableB = KnightTableW
-    KnightTableB.reverse()
 
-    BishopTableW = [
+    BishopTable = [
         [0	,	0	,	-10	,	0	,	0	,	-10	,	0	,	0]	,
         [0	,	0	,	0	,	10	,	10	,	0	,	0	,	0]	,
         [0	,	0	,	10	,	15	,	15	,	10	,	0	,	0]	,
@@ -104,10 +100,8 @@ def getCurrentPointOfTable(board):
         [0	,	0	,	0	,	10	,	10	,	0	,	0	,	0]	,
         [0	,	0	,	0	,	0	,	0	,	0	,	0	,	0]
     ]
-    BishopTableB = BishopTableW
-    BishopTableB.reverse()
 
-    RookTableW = [
+    RookTable = [
         [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
         [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
         [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
@@ -117,29 +111,27 @@ def getCurrentPointOfTable(board):
         [25	,	25	,	25	,	25	,	25	,	25	,	25	,	25	],
         [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0]
     ]
-    RookTableB = RookTableW
-    RookTableB.reverse()
 
     score = 0
     for i in range(8):
         for j in range(8):
             piece = board[i][j]
             if piece == "p":
-                score -= PawnTableB[i][j]
+                score -= PawnTable[7-i][7-j]
             elif piece == "n":
-                score -= KnightTableB[i][j]
+                score -= KnightTable[7-i][7-j]
             elif piece == "b":
-                score -= BishopTableB[i][j]
+                score -= BishopTable[7-i][7-j]
             elif piece == "r":
-                score -= RookTableB[i][j]
+                score -= RookTable[7-i][7-j]
             elif piece == "P":
-                score += PawnTableW[i][j]
+                score += PawnTable[i][j]
             elif piece == "N":
-                score += KnightTableW[i][j]
+                score += KnightTable[i][j]
             elif piece == "B":
-                score += PawnTableW[i][j]
+                score += BishopTable[i][j]
             elif piece == "R":
-                score += PawnTableW[i][j]
+                score += RookTable[i][j]
     return score*0.1
 
 
@@ -297,7 +289,7 @@ def minimax(Board, board, depth, alpha, beta, isMaximizing):
 
 
 # GUI PART
-WIDTH = HEIGHT = 512
+WIDTH = HEIGHT = 600
 DIMENSION = 8
 SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 60
@@ -323,6 +315,18 @@ def StartGame(Board, t):
         board = boardToStr(Board)
         if Board.is_checkmate():
             print("Check Mate!")
+            BPS = sumOfList(BPS)
+            BMS = sumOfList(BMS)
+            WPS = sumOfList(WPS)
+            WMS = sumOfList(WMS)
+            averageB = BPS/BMS
+            averageW = WPS/WMS
+            print("Black's Total Score:  ", str(BPS))
+            print("Black's Total Move:  ", str(BMS))
+            print("White's Total Score:  ", str(WPS))
+            print("White's Total Move:  ", str(WMS))
+            print("Black's Score Average:  ", str(averageB))
+            print("White's Score Average:  ", str(averageW))
             break
         if Board.is_repetition(20):
             print("Draw")
@@ -400,9 +404,9 @@ def drawBoard(screen, board):
         for c in range(DIMENSION):
             if len(sqSelected) != 0:
                 if sqSelected[0] == (r, c):
-                    color = (100, 100, 20)
+                    color = (110, 179, 93)
                 elif sqSelected[1] == (r, c):
-                    color = (100, 100, 20)
+                    color = (82, 143, 67)
                 else:
                     color = colors[(r+c) % 2]
 
@@ -444,25 +448,25 @@ def BoardLetters(screen, r, c):
                     (c*SQ_SIZE-2, r*SQ_SIZE+42))
     if r == 7 and c == 1:
         screen.blit(font.render('B', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+                    (c*SQ_SIZE, r*SQ_SIZE+44))
     if r == 7 and c == 2:
         screen.blit(font.render('C', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+                    (c*SQ_SIZE-1, r*SQ_SIZE+42))
     if r == 7 and c == 3:
         screen.blit(font.render('D', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+                    (c*SQ_SIZE-1, r*SQ_SIZE+42))
     if r == 7 and c == 4:
         screen.blit(font.render('E', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+                    (c*SQ_SIZE, r*SQ_SIZE+42))
     if r == 7 and c == 5:
         screen.blit(font.render('F', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+                    (c*SQ_SIZE-1, r*SQ_SIZE+42))
     if r == 7 and c == 6:
         screen.blit(font.render('G', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+                    (c*SQ_SIZE, r*SQ_SIZE+42))
     if r == 7 and c == 7:
         screen.blit(font.render('H', True, (0, 0, 0)),
-                    (c*SQ_SIZE-2, r*SQ_SIZE+42))
+                    (c*SQ_SIZE-1, r*SQ_SIZE+42))
 
 
 def drawPieces(screen, board):
@@ -484,24 +488,10 @@ fen = "rnbqkbnr/pppp1p1p/6p1/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 1"
 Board = chess.Board()
 board = boardToStr(Board)
 oldboard = board
-gui = Thread(target=main, args=(Board, 1))
-game = Thread(target=StartGame, args=(Board, 1))
+gui = Thread(target=main, args=(Board, 0.5))
+game = Thread(target=StartGame, args=(Board, 0.5))
 
 
 gui.start()
 time.sleep(3)
 game.start()
-
-
-"""BPS = sumOfList(BPS)
-BMS = sumOfList(BMS)
-WPS = sumOfList(WPS)
-WMS = sumOfList(WMS)
-averageB = BPS/BMS
-averageW = WPS/WMS
-print("Black's Total Score:  ", str(BPS))
-print("Black's Total Move:  ", str(BMS))
-print("White's Total Score:  ", str(WPS))
-print("White's Total Move:  ", str(WMS))
-print("Black's Score Average:  ", str(averageB))
-print("White's Score Average:  ", str(averageW))"""
