@@ -3,10 +3,21 @@ import random
 import chess
 from os import system
 import pygame as p
+import time
+from threading import Thread
 WMS = []
 BMS = []
 WPS = []
 BPS = []
+
+
+def sqcolor(board1, board2):
+    sq1 = []
+    for i in range(8):
+        for j in range(8):
+            if board1[i][j] != board2[i][j]:
+                sq1.append((i, j))
+    return sq1
 
 
 def sumOfList(myList):
@@ -14,13 +25,6 @@ def sumOfList(myList):
     for item in myList:
         listSum += item
     return listSum
-
-
-def oppositeBoolean(boolean):
-    if(boolean):
-        return False
-    else:
-        return True
 
 
 def listToString(s):
@@ -63,87 +67,80 @@ def getLegalMoves(Board):
     return legalMoves
 
 
-def getCurrentPointOfTable(x, y, stone):
-    king = [[-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [-3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [-2.0, -3.0, -3.0, -4.0, -4.0, -3.0, -3.0, -2.0],
-            [-1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0],
-            [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 2.0],
-            [2.0, 3.0, 1.0, 0.0, 0.0, 1.0, 3.0, 2.0]]
+def getCurrentPointOfTable(board):
+    PawnTableW = [
+        [0	,	0	,	0	,	0	,	0	,	0	,	0	,	0	],
+        [10	,	10	,	0	,	-10	,	-10	,	0	,	10	,	10	],
+        [5	,	0	,	0	,	5	,	5	,	0	,	0	,	5	],
+        [0	,	0	,	10	,	20	,	20	,	10	,	0	,	0	],
+        [5	,	5	,	5	,	10	,	10	,	5	,	5	,	5	],
+        [10	,	10	,	10	,	20	,	20	,	10	,	10	,	10	],
+        [20	,	20	,	20	,	30	,	30	,	20	,	20	,	20	],
+        [0	,	0	,	0	,	0	,	0	,	0	,	0	,	0]
+    ]
+    PawnTableB = PawnTableW
+    PawnTableB.reverse()
 
-    rook = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5],
-            [0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0]]
+    KnightTableW = [
+        [0	,	-10	,	0	,	0	,	0	,	0	,	-10	,	0	],
+        [0	,	0	,	0	,	5	,	5	,	0	,	0	,	0	],
+        [0	,	0	,	10	,	10	,	10	,	10	,	0	,	0	],
+        [0	,	0	,	10	,	20	,	20	,	10	,	5	,	0	],
+        [5	,	10	,	15	,	20	,	20	,	15	,	10	,	5	],
+        [5	,	10	,	10	,	20	,	20	,	10	,	10	,	5	],
+        [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
+        [0	,	0	,	0	,	0	,	0	,	0	,	0	,	0]
+    ]
+    KnightTableB = KnightTableW
+    KnightTableB.reverse()
 
-    knight = [[-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
-              [-4.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, -4.0],
-              [-3.0, 0.0, 1.0, 1.5, 1.5, 1.0, 0.0, -3.0],
-              [-3.0, 0.5, 1.5, 2.0, 2.0, 1.5, 0.5, -3.0],
-              [-3.0, 0.5, 1.5, 2.0, 2.0, 1.5, 0.5, -3.0],
-              [-3.0, 0.5, 1.0, 1.5, 1.5, 1.0, 0.5, -3.0],
-              [-4.0, -2.0, 0.0, 0.5, 0.5, 0.0, -2.0, -4.0],
-              [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]]
+    BishopTableW = [
+        [0	,	0	,	-10	,	0	,	0	,	-10	,	0	,	0]	,
+        [0	,	0	,	0	,	10	,	10	,	0	,	0	,	0]	,
+        [0	,	0	,	10	,	15	,	15	,	10	,	0	,	0]	,
+        [0	,	10	,	15	,	20	,	20	,	15	,	10	,	0]	,
+        [0	,	10	,	15	,	20	,	20	,	15	,	10	,	0]	,
+        [0	,	0	,	10	,	15	,	15	,	10	,	0	,	0]	,
+        [0	,	0	,	0	,	10	,	10	,	0	,	0	,	0]	,
+        [0	,	0	,	0	,	0	,	0	,	0	,	0	,	0]
+    ]
+    BishopTableB = BishopTableW
+    BishopTableB.reverse()
 
-    pawn = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
-            [1.0, 1.0, 2.0, 3.0, 3.0, 2.0, 1.0, 1.0],
-            [0.5, 0.5, 1.0, 2.5, 2.5, 1.0, 0.5, 0.5],
-            [0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 0.0],
-            [0.0, -0.5, -1.0, 0.0, 0.0, -1.0, -0.5, 0.5],
-            [0.5, 1.0, 1.0, -2.0, -2.0,  1.0, 1.0, 0.5],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
+    RookTableW = [
+        [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
+        [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
+        [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
+        [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
+        [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
+        [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0	],
+        [25	,	25	,	25	,	25	,	25	,	25	,	25	,	25	],
+        [0	,	0	,	5	,	10	,	10	,	5	,	0	,	0]
+    ]
+    RookTableB = RookTableW
+    RookTableB.reverse()
 
-    queen = [[-2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
-             [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
-             [-1.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0, -1.0],
-             [-0.5, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0, -0.5],
-             [0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.0, -0.5],
-             [-1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.0, -1.0],
-             [-1.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, -1.0],
-             [-2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]]
-
-    bishop = [[-2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
-              [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
-              [-1.0, 0.0, 0.5, 1.0, 1.0, 0.5, 0.0, -1.0],
-              [-1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, -1.0],
-              [-1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, -1.0],
-              [-1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0],
-              [-1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.5, -1.0],
-              [-2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]]
-
-    if stone == "R":
-        return rook[x][y]
-    elif stone == "N":
-        return knight[x][y]
-    elif stone == "B":
-        return bishop[x][y]
-    elif stone == "Q":
-        return queen[x][y]
-    elif stone == "K":
-        return king[x][y]
-    elif stone == "P":
-        return pawn[x][y]
-    elif stone == "r":
-        return -rook[7-x][7-y]
-    elif stone == "n":
-        return -knight[7-x][7-y]
-    elif stone == "b":
-        return -bishop[7-x][7-y]
-    elif stone == "q":
-        return -queen[7-x][7-y]
-    elif stone == "k":
-        return -king[7-x][7-y]
-    elif stone == "p":
-        return -pawn[7-x][7-y]
-    else:
-        return 0
+    score = 0
+    for i in range(8):
+        for j in range(8):
+            piece = board[i][j]
+            if piece == "p":
+                score -= PawnTableB[i][j]
+            elif piece == "n":
+                score -= KnightTableB[i][j]
+            elif piece == "b":
+                score -= BishopTableB[i][j]
+            elif piece == "r":
+                score -= RookTableB[i][j]
+            elif piece == "P":
+                score += PawnTableW[i][j]
+            elif piece == "N":
+                score += KnightTableW[i][j]
+            elif piece == "B":
+                score += PawnTableW[i][j]
+            elif piece == "R":
+                score += PawnTableW[i][j]
+    return score*0.1
 
 
 def getPiecePoint(piece):
@@ -167,26 +164,6 @@ def getPiecePoint(piece):
         return 0
 
 
-def CountDoubledPawn(board):
-    pawnb = 0
-    pawnw = 0
-    scoreb = 0
-    scorew = 0
-    for i in range(8):
-        for j in range(8):
-            if board[j][i] == "p":
-                pawnb += 1
-            if board[j][i] == "P":
-                pawnw += 1
-        if pawnw >= 2:
-            scorew += pawnw/2
-        if pawnb >= 2:
-            scoreb += pawnb/2
-        pawnb = 0
-        pawnw = 0
-    return (scorew - scoreb)*0.5
-
-
 def Evaluation(Board, board):  # + point for white - point for black
     score = 0
     for i in range(8):
@@ -196,16 +173,8 @@ def Evaluation(Board, board):  # + point for white - point for black
         score += 200
     elif Board.result() == "0-1":
         score -= 200
+    score += getCurrentPointOfTable(board)
     return score
-
-
-"""f(p) = 200(K-K')
-       + 9(Q-Q')
-       + 5(R-R')
-       + 3(B-B' + N-N')
-       + 1(P-P')
-       - 0.5(D-D' + S-S' + I-I')
-       + 0.1(M-M') + ..."""
 
 
 def takeSecond(elem):
@@ -248,7 +217,7 @@ def findBestMove(Board, board, color):
     for move in legalMoves:
         Board.push_san(move)
         score = minimax(Board, board, 0, -99999999,
-                        99999999, oppositeBoolean(color))
+                        99999999, not color)
         Board.pop()
         print(score, "            ", move)
         if color:
@@ -261,10 +230,10 @@ def findBestMove(Board, board, color):
                 bestScore = score
                 bestMove = move
                 moveList.append((bestMove, bestScore))
-        if color:
-            moveList.sort(key=takeSecond, reverse=True)
-        else:
-            moveList.sort(key=takeSecond, reverse=False)
+    if color:
+        moveList.sort(key=takeSecond, reverse=True)
+    else:
+        moveList.sort(key=takeSecond, reverse=False)
     bestMove = takeBestMoveRandomly(moveList)
     Board.push_san(bestMove)
     if color:
@@ -321,20 +290,6 @@ def minimax(Board, board, depth, alpha, beta, isMaximizing):
         return bestScore
 
 
-def printBoard(Board):
-    print("  A B C D E F G H")
-    boardStr = boardToStr(Board)
-    lineNum = 8
-    for line in boardStr:
-        lineStr = str(line)
-        lineStr = lineStr[1:]
-        lineStr = lineStr[:len(lineStr)-2]
-        lineStr = lineStr.replace("'", "")
-        lineStr = lineStr.replace(",", "")
-        print(str(lineNum), lineStr)
-        lineNum -= 1
-
-
 # GUI PART
 WIDTH = HEIGHT = 512
 DIMENSION = 8
@@ -353,7 +308,35 @@ def loadImages():
             "img/" + piece + "w.png"), (SQ_SIZE, SQ_SIZE))
 
 
-def main(Board, board):
+def StartGame(Board, t):
+    global boardToDraw
+    global oldboard
+    boardToDraw = boardToStr(Board)
+    while True:
+        turn = Board.turn
+        board = boardToStr(Board)
+        if Board.is_checkmate():
+            print("Check Mate!")
+            break
+        if Board.is_repetition(20):
+            print("Draw")
+            break
+        if(turn):
+            # print("Legal Moves:\n", Board.legal_moves)
+            print("White's Move:\n")
+            findBestMove(Board, board, turn)  # White's move
+            board = boardToStr(Board)
+        else:
+            print("Black's Move:\n")
+            findBestMove(Board, board, turn)  # Black's move
+            board = boardToStr(Board)
+        oldboard = boardToDraw
+        boardToDraw = board
+
+
+def main(Board, t):
+    global boardToDraw
+    boardToDraw = boardToStr(Board)
     p.init()
     p.display.set_caption('Chess')
     screen = p.display.set_mode((WIDTH, HEIGHT))
@@ -362,31 +345,11 @@ def main(Board, board):
     loadImages()
     running = True
     # p.mixer.Channel(0).play(p.mixer.Sound('maintheme.wav'))
-    sqSelected = ()
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
+                game.join()
                 running = False
-        board = boardToStr(Board)
-        turn = Board.turn
-        board = boardToStr(Board)
-        drawGameState(screen, board, sqSelected)
-        clock.tick(MAX_FPS)
-        p.display.flip()
-        if Board.is_checkmate():
-            print("Check Mate!")
-            running = False
-        if Board.is_repetition(20):
-            print("Draw")
-        if(turn):
-            #print("Legal Moves:\n", Board.legal_moves)
-            print("White's Move:\n")
-            findBestMove(Board, board, turn)  # White's move
-            board = boardToStr(Board)
-        else:
-            print("Black's Move:\n")
-            findBestMove(Board, board, turn)  # Black's move
-            board = boardToStr(Board)
         """elif e.type == p.MOUSEBUTTONDOWN:
 
                 location = p.mouse.get_pos()  # (x, y) location of mouse
@@ -414,26 +377,26 @@ def main(Board, board):
                     sqSelected = ()
                     playerClicks = []
                     move = """
-
-        board = boardToStr(Board)
-        drawGameState(screen, board, sqSelected)
+        drawGameState(screen, boardToDraw)
         clock.tick(MAX_FPS)
         p.display.flip()
-        p.time.wait(2000)
 
 
-def drawGameState(screen, board, sqSelected):
-    drawBoard(screen, sqSelected)
+def drawGameState(screen, board):
+    drawBoard(screen, board)
     drawPieces(screen, board)
 
 
-def drawBoard(screen, sqSelected):
+def drawBoard(screen, board):
     colors = [p.Color("white"), p.Color("#5f5f5f"), p.Color("#377b8c")]
+    sqSelected = sqcolor(board, oldboard)
     for r in range(DIMENSION):
         for c in range(DIMENSION):
-            if sqSelected != (-1, -1):
-                if sqSelected == (r, c):
-                    color = colors[2]
+            if len(sqSelected) != 0:
+                if sqSelected[0] == (r, c):
+                    color = (100, 100, 20)
+                elif sqSelected[1] == (r, c):
+                    color = (100, 100, 20)
                 else:
                     color = colors[(r+c) % 2]
             else:
@@ -508,15 +471,22 @@ def drawPieces(screen, board):
                         IMAGES[piece.lower()+"b"], p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
-moveHistory = []
-
-
 DEPTH = 2
 fen = "rnbqkbnr/pppp1p1p/6p1/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 1"
+
 Board = chess.Board()
 board = boardToStr(Board)
-main(Board, board)
-BPS = sumOfList(BPS)
+oldboard = board
+gui = Thread(target=main, args=(Board, 0))
+game = Thread(target=StartGame, args=(Board, 0))
+
+
+gui.start()
+time.sleep(3)
+game.start()
+
+
+"""BPS = sumOfList(BPS)
 BMS = sumOfList(BMS)
 WPS = sumOfList(WPS)
 WMS = sumOfList(WMS)
@@ -527,4 +497,4 @@ print("Black's Total Move:  ", str(BMS))
 print("White's Total Score:  ", str(WPS))
 print("White's Total Move:  ", str(WMS))
 print("Black's Score Average:  ", str(averageB))
-print("White's Score Average:  ", str(averageW))
+print("White's Score Average:  ", str(averageW))"""
