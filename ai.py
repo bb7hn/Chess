@@ -242,8 +242,14 @@ def findBestMove(Board, board, color):
     else:
         BMS.append(1)
         BPS.append(bestScore)
-    p.mixer.Channel(1).play(p.mixer.Sound('played.wav'))
+    dum = Thread(target=playedSound, args=("ah", 3))
+    dum.start()
     # print(Board.fen())
+
+
+def playedSound(ne, t):
+    time.sleep(2)
+    p.mixer.Channel(1).play(p.mixer.Sound('played.wav'))
 
 
 def minimax(Board, board, depth, alpha, beta, isMaximizing):
@@ -399,6 +405,7 @@ def drawBoard(screen, board):
                     color = (100, 100, 20)
                 else:
                     color = colors[(r+c) % 2]
+
             else:
                 color = colors[(r+c) % 2]
             p.draw.rect(screen, color, p.Rect(
