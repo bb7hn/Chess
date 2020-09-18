@@ -312,7 +312,7 @@ def StartGame(Board, t):
     global boardToDraw
     global oldboard
     boardToDraw = boardToStr(Board)
-    while True:
+    while running:
         turn = Board.turn
         board = boardToStr(Board)
         if Board.is_checkmate():
@@ -343,12 +343,12 @@ def main(Board, t):
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
     loadImages()
+    global running
     running = True
     # p.mixer.Channel(0).play(p.mixer.Sound('maintheme.wav'))
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
-                game.join()
                 running = False
         """elif e.type == p.MOUSEBUTTONDOWN:
 
@@ -477,8 +477,8 @@ fen = "rnbqkbnr/pppp1p1p/6p1/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 1"
 Board = chess.Board()
 board = boardToStr(Board)
 oldboard = board
-gui = Thread(target=main, args=(Board, 0))
-game = Thread(target=StartGame, args=(Board, 0))
+gui = Thread(target=main, args=(Board, 1))
+game = Thread(target=StartGame, args=(Board, 1))
 
 
 gui.start()
