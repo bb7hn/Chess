@@ -4,11 +4,13 @@ import chess
 from os import system
 import pygame as p
 import time
+import uuid
 from threading import Thread
 WMS = []
 BMS = []
 WPS = []
 BPS = []
+MoveHistory = [["", " ", " ", ""], ["", " ", " ", ""]]
 
 
 def sqcolor(board1, board2):
@@ -140,16 +142,20 @@ def getPiecePoint(piece):
         return 9
     elif piece == "R":
         return 5
-    elif piece == "N" or piece == "B":
+    elif piece == "N":
         return 3
+    elif piece == "B":
+        return 3.3
     elif piece == "P":
         return 1
     elif piece == "q":
         return -9
     elif piece == "r":
         return -5
-    elif piece == "n" or piece == "b":
+    elif piece == "n":
         return -3
+    elif piece == "b":
+        return -3.3
     elif piece == "p":
         return -1
     else:
@@ -165,7 +171,6 @@ def Evaluation(Board, board):  # + point for white - point for black
         score += 200
     elif Board.result() == "0-1":
         score -= 200
-    score += getCurrentPointOfTable(board)
     return score
 
 
@@ -173,7 +178,7 @@ def takeSecond(elem):
     return elem[1]
 
 
-def takeBestMoveRandomly(moveList):
+def takeBestMoves(moveList, randomMove=False):
     if len(moveList) < 1:
         return 0
     bestMoveScore = moveList[0][1]  # take best move's score
@@ -181,13 +186,20 @@ def takeBestMoveRandomly(moveList):
     for move in moveList:
         if move[1] == bestMoveScore:  # if move score is equal best score
             bestMoveList.append(move)  # take it to the list
-    # return the list
-    return bestMoveList[random.randint(0, len(bestMoveList)-1)][0]
+    if not randomMove:
+        return bestMoveList
+    else:
+        return bestMoveList[random.randint(0, len(bestMoveList)-1)][0]
+
 
 # sort the move list from higher point to lower point
 
+counter4LegalMovesw = 0
+counter4LegalMovesb = 0
+
 
 def findBestMove(Board, board, color):
+    global DEPTH
     legalMoves = getLegalMoves(Board)
     moveList = []
     """numOfMoveToRemove = math.floor(len(legalMoves)*0.2)
@@ -201,11 +213,7 @@ def findBestMove(Board, board, color):
     if legalMoves == 1:
         print("Check Mate!")
         return 0
-    for move in legalMoves:
-        if len(WMS) <= 5 and ("R" or "K" or "Q" in move):
-            legalMoves.remove(move)
-        elif len(WMS) <= 9 and "K" in move:
-            legalMoves.remove(move)
+    print(str(DEPTH) + " depth search for Moves("+str(len(legalMoves))+")")
     for move in legalMoves:
         Board.push_san(move)
         score = minimax(Board, board, 0, -99999999,
@@ -217,25 +225,55 @@ def findBestMove(Board, board, color):
                 bestScore = score
                 bestMove = move
                 moveList.append((bestMove, bestScore))
+            if bestScore >= 9999:
+                break
         else:
             if score <= bestScore:
                 bestScore = score
                 bestMove = move
                 moveList.append((bestMove, bestScore))
+            if score <= -9999:
+                break
     if color:
         moveList.sort(key=takeSecond, reverse=True)
     else:
-        moveList.sort(key=takeSecond, reverse=False)
-    bestMove = takeBestMoveRandomly(moveList)
-    Board.push_san(bestMove)
-    if color:
-        WMS.append(1)
-        WPS.append(bestScore)
+        moveList.sort(key=takeSecond)
+    moveList = takeBestMoves(moveList)
+    bestMoveList = []
+    if len(moveList) <= 5:
+        DEPTH = 4
+        if len(moveList) == 1:
+            DEPTH = 1
+    elif len(moveList) > 5 and moveList[0][1] == 0:
+        DEPTH = 2
     else:
-        BMS.append(1)
-        BPS.append(bestScore)
-    dum = Thread(target=playedSound, args=("ah", 3))
-    dum.start()
+        DEPTH = 3
+    print(str(DEPTH) + " depth search for Best Moves("+str(len(moveList))+")")
+    for move in moveList:
+        Board.push_san(move[0])
+        score = minimax(Board, board, 0, -99999999,
+                        99999999, not color)
+        Board.pop()
+        print(score, "            ", move[0])
+        if color:
+            if score >= bestScore:
+                bestScore = score
+                bestMove = move[0]
+                bestMoveList.append((bestMove, bestScore))
+            if bestScore >= 9999:
+                break
+        else:
+            if score <= bestScore:
+                bestScore = score
+                bestMove = move[0]
+                bestMoveList.append((bestMove, bestScore))
+            if score <= -9999:
+                break
+    bestmove = takeBestMoves(bestMoveList, True)
+    Board.push_san(bestMove)
+    sound = Thread(target=playedSound, args=("", 3))
+    sound.start()
+    DEPTH = 2
     # print(Board.fen())
 
 
@@ -288,6 +326,43 @@ def minimax(Board, board, depth, alpha, beta, isMaximizing):
         return bestScore
 
 
+def saveData():
+    bms = wms = 1
+    global BPS
+    global BMS
+    global WPS
+    global WMS
+    if len(BMS) != 0:
+        bms = sumOfList(BMS)
+    bps = sumOfList(BPS)
+    if len(WMS) != 0:
+        wms = sumOfList(WMS)
+    wps = sumOfList(WPS)
+    averageB = bps/bms
+    averageW = wps/wms
+    BPS = "Black's Total Score:  " + str(bps)
+    BMS = "Black's Total Move:  "+str(bms)
+    WPS = "White's Total Score:  " + str(wps)
+    WMS = "White's Total Move:  " + str(wms)
+    averageB = "Black's Score Average:  "+str(averageB)
+    averageW = "White's Score Average:  "+str(averageW)
+    text = str(BPS+"\n"+BMS+"\n"+WPS+"\n"+WMS+"\n"+averageB+"\n"+averageW)
+    print(text)
+    text += "\nWhite's Move:\n"
+    i = 0
+    for move in MoveHistory[0]:
+        if move != "" and move != " ":
+            text += "\n"+str(i+1)+" "+move
+    i = 0
+    text += "Black's Move:\n"
+    for move in MoveHistory[1]:
+        if move != "" and move != " ":
+            text += "\n"+str(i+1)+" "+move
+    f = open("./games/"+str(uuid.uuid1())+".csv", "a")
+    f.write(text)
+    f.close()
+
+
 # GUI PART
 WIDTH = HEIGHT = 600
 DIMENSION = 8
@@ -315,21 +390,11 @@ def StartGame(Board, t):
         board = boardToStr(Board)
         if Board.is_checkmate():
             print("Check Mate!")
-            BPS = sumOfList(BPS)
-            BMS = sumOfList(BMS)
-            WPS = sumOfList(WPS)
-            WMS = sumOfList(WMS)
-            averageB = BPS/BMS
-            averageW = WPS/WMS
-            print("Black's Total Score:  ", str(BPS))
-            print("Black's Total Move:  ", str(BMS))
-            print("White's Total Score:  ", str(WPS))
-            print("White's Total Move:  ", str(WMS))
-            print("Black's Score Average:  ", str(averageB))
-            print("White's Score Average:  ", str(averageW))
+            saveData()
             break
-        if Board.is_repetition(20):
+        if Board.is_repetition(4):
             print("Draw")
+            saveData()
             break
         if(turn):
             # print("Legal Moves:\n", Board.legal_moves)
@@ -483,15 +548,12 @@ def drawPieces(screen, board):
 
 
 DEPTH = 2
-fen = "rnbqkbnr/pppp1p1p/6p1/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 1"
-
+fen = "4R3/8/8/2Pkp3/N7/4rnKB/1nb5/b1r5 b - - 0 1"
 Board = chess.Board()
 board = boardToStr(Board)
 oldboard = board
 gui = Thread(target=main, args=(Board, 0.5))
 game = Thread(target=StartGame, args=(Board, 0.5))
-
-
 gui.start()
 time.sleep(3)
 game.start()
